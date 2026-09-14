@@ -180,10 +180,8 @@ def test_green_offline_rehearsal_cannot_make_the_release_verdict_green(qualified
     # rather than pinned to PASS forever: the record binds source digests, and an edit to any
     # acquisition module correctly returns this to NOT_RUN until the run is repeated.
     assert gates["live_sources"]["status"] in ("PASS", "REFUSED", "FAIL", "NOT_RUN")
-    assert gates["live_sources"]["blocking"] is False
-    # The verdict is unmoved, and by exactly one thing: TG17.11's declared scientific limit.
-    # Five of seven gates now clear and the release is still refused, which is the point --
-    # a refusal blocks as a failure does, and clearing four archives does not buy past it.
+    assert gates["live_sources"]["blocking"] is (gates["live_sources"]["status"] != "PASS")
+    # The verdict is unmoved: a refusal and stale recorded evidence both block as failures do.
     assert gates["scale_shape_calibration"]["status"] == "REFUSED"
     assert qualified["verdict"] == "NOT_RELEASEABLE"
 
@@ -411,35 +409,40 @@ def test_the_superseded_claim_is_recomputed_and_cannot_disagree_with_the_gate(qu
     assert facts["declared_null_can_ever_reject"] is False
 
 
-def test_the_declared_inference_is_read_from_the_manifests_rather_than_restated(qualified):
-    """The load-bearing half of why a calibrated method leaves the gate refused.
+def test_the_successor_inference_is_read_without_rewriting_historical_manifests(qualified):
+    """The calibrated method is declared separately while its predecessor remains visible.
 
-    It would be a sentence in a docstring if nothing computed it, and a sentence cannot notice the
-    day a manifest starts requesting the calibrated inference. The six frozen declarations are
-    built and their null is read back instead.
+    Exact substitution has no replication count, so forcing it into the legacy null schema would
+    misdescribe it. The successor declaration discharges only the inference-declaration blocker.
     """
     declared = qualified["scale_shape_calibration"]["declared_null"]
-    assert [row["method"] for row in declared["declared"]] == ["scale_partner_reassignment"]
-    assert declared["declared"][0]["replications"] == 200
-    assert declared["manifests_request_the_calibrated_inference"] is False
-    assert declared["estimand"] == "joint_structure"
+    assert [row["method"] for row in declared["legacy_declared"]] == [
+        "scale_partner_reassignment"]
+    assert declared["legacy_declared"][0]["replications"] == 200
+    assert declared["manifests_request_the_calibrated_inference"] is True
+    assert declared["inference"] == "exact_pool_substitution"
+    assert declared["estimand"] == "per_correspondence"
+    assert declared["successor"]["real_pool_inventory"]["status"] == "UNRESOLVED"
+    assert len(declared["successor"]["declaration_sha256"]) == 64
     assert qualified["scale_shape_calibration"]["supersession"]["superseding"]["estimand"] == \
-        "per_correspondence", "the calibrated method answers the other question"
+        "per_correspondence"
 
 
 def test_the_gate_publishes_its_blockers_and_admits_which_one_it_cannot_decide(qualified):
     """A status alone invites the reading that enough work turns it green.
 
-    Two of these would be discharged by work. The third is a property of a curated inventory of
-    real records, and no further measurement on built fixtures reaches it; saying so beside the
-    other two is the difference between a blocked gate and a gate that looks nearly open.
+    The remaining blocker is a property of a curated inventory of real records, and no further
+    measurement on built fixtures reaches it.
     """
     blockers = {row["blocker"]: row for row in qualified["scale_shape_calibration"]["blockers"]}
     assert "recorded_calibration" not in blockers, "this checkout carries a passing recording"
-    assert blockers["declared_inference"]["decidable_here"] is True
-    assert "scale_partner_reassignment" in blockers["declared_inference"]["detail"]
+    assert "declared_inference" not in blockers
     exchangeability = blockers["pool_exchangeability_on_real_records"]
     assert exchangeability["decidable_here"] is False
+    assert "UNRESOLVED" in exchangeability["detail"]
+    assert "READY_FOR_CURATION_REVIEW" in exchangeability["detail"]
+    assert "104 explicit profiles against 48 required" in exchangeability["detail"]
+    assert "shortfall of 0" in exchangeability["detail"]
     assert "curation obligation" in exchangeability["discharged_by"]
     assert all(row["discharged_by"] for row in blockers.values()), (
         "a blocker that does not say what would discharge it is a complaint")

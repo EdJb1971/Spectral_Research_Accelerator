@@ -1,5 +1,5 @@
 /** TG16: progressive representation-structure workflow over one declared sample table. */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ExternalLink, Loader2, Lock, Play } from 'lucide-react';
 
 import { apiService } from '../services/api';
@@ -26,14 +26,18 @@ interface Props {
   file: File;
   declaration: types.SampleTableDeclaration;
   capability: types.DatasetCapabilityProfile;
+  handoff?: types.SampleTablePlanningHandoff | null;
+  handoffPlan?: Record<string, any> | null;
   onError?: (message: string) => void;
 }
 
 export const RepresentationStructureProgramme: React.FC<Props> = ({
-  file, declaration, capability, onError,
+  file, declaration, capability, handoff = null, handoffPlan = null, onError,
 }) => {
   const [busy, setBusy] = useState('');
+  const [structurePlan, setStructurePlan] = useState<Json | null>(null);
   const [structure, setStructure] = useState<Json | null>(null);
+  const [conditionalPlan, setConditionalPlan] = useState<Json | null>(null);
   const [conditional, setConditional] = useState<Json | null>(null);
   const [subspacePlan, setSubspacePlan] = useState<Json | null>(null);
   const [generation, setGeneration] = useState<Json | null>(null);
@@ -55,12 +59,26 @@ export const RepresentationStructureProgramme: React.FC<Props> = ({
     [declaration]);
   const replicated = confirmation?.internally_replicated_candidates ?? [];
 
+  useEffect(() => {
+    if (!handoff || !handoffPlan) return;
+    if (handoff.operation.id === 'redundancy_structure_audit') {
+      setStructurePlan(handoffPlan); setStructure(null);
+    } else if (handoff.operation.id === 'conditional_information_audit') {
+      setConditionalPlan(handoffPlan); setConditional(null);
+    } else if (handoff.operation.id === 'stable_subspace_generation') {
+      setSubspacePlan(handoffPlan); setGeneration(null); setConfirmationSeal(null);
+      setConfirmation(null); setPublished(null);
+    }
+  }, [handoff, handoffPlan]);
+
   const runStructure = () => run('structure', async () => {
-    const plan = await apiService.planRedundancyStructure(file, declaration);
+    const plan = structurePlan ?? await apiService.planRedundancyStructure(file, declaration);
+    setStructurePlan(plan);
     setStructure(await apiService.runRedundancyStructure(file, plan));
   });
   const runConditional = () => run('conditional', async () => {
-    const plan = await apiService.planConditionalInformation(file, declaration);
+    const plan = conditionalPlan ?? await apiService.planConditionalInformation(file, declaration);
+    setConditionalPlan(plan);
     setConditional(await apiService.runConditionalInformation(file, plan));
   });
   const planSubspace = () => run('plan', async () => {
@@ -123,7 +141,10 @@ export const RepresentationStructureProgramme: React.FC<Props> = ({
         <p className="text-[11px] text-slate-500">Map duplicate, complementary, and unresolved
           pair structure across every declared feature.</p>
         <Button working="structure" onClick={() => void runStructure()}
-          disabled={!available('redundancy_structure_audit')}>Plan and audit</Button>
+          disabled={!available('redundancy_structure_audit')}>
+          {structurePlan ? 'Audit prepared plan' : 'Plan and audit'}</Button>
+        {structurePlan && <p className="font-mono text-[10px] text-slate-500">
+          plan {short(structurePlan.plan_sha256)}</p>}
         {!available('redundancy_structure_audit') && <p className="text-[10px] text-amber-400">
           {capability.operations.redundancy_structure_audit?.reason}</p>}
         <Result title="Candidate structure map" value={structure} rows={structure?.pairs} />
@@ -134,7 +155,10 @@ export const RepresentationStructureProgramme: React.FC<Props> = ({
         <p className="text-[11px] text-slate-500">Requires exactly one declared nuisance and
           reports conditional association—not confounding removal.</p>
         <Button working="conditional" onClick={() => void runConditional()}
-          disabled={!hasNuisance || !available('conditional_information_audit')}>Plan and audit</Button>
+          disabled={!hasNuisance || !available('conditional_information_audit')}>
+          {conditionalPlan ? 'Audit prepared plan' : 'Plan and audit'}</Button>
+        {conditionalPlan && <p className="font-mono text-[10px] text-slate-500">
+          plan {short(conditionalPlan.plan_sha256)}</p>}
         {(!hasNuisance || !available('conditional_information_audit')) &&
           <p className="text-[10px] text-amber-400">
             {capability.operations.conditional_information_audit?.reason}</p>}

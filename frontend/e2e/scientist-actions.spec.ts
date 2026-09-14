@@ -33,7 +33,7 @@ import { dirname, resolve } from 'node:path';
  * no browser can observe it.
  */
 
-const COMPOSER = 'Experiment Composer';
+const COMPOSER = 'New experiment';
 
 /**
  * Where the measurement lands: committed, unlike the gitignored `e2e/artifacts/`, because a

@@ -1,0 +1,57 @@
+{
+  "schema": "t4e21-faithful-background-recovery/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.21",
+  "artefact": "centre recovery at the feature density the real record actually carries",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_exists": "T4E.20 demonstrated that the extractor's centroid is displaced toward the broader side of an asymmetric feature, but its validity gate failed by its own declared criterion: the phase-randomised backgrounds yielded a median of 0 features where the record yields 7, so a planted vortex faced no competition. The synthetic problem was easier than the real one, which forbids the quantitative comparison -- 10.2 km synthetic against 33.8 km observed. This slice supplies the missing ingredient, which is other features.",
+  "what_makes_a_background_faithful_here": {
+    "the_property_that_was_missing": "Feature DENSITY, and with it the competition and suppression between features that a real frame imposes. `local_maximum_extractor` suppresses a maximum within a stronger feature's own scale, so the presence of six other features is not decoration -- it changes which maxima survive and where their windows fall.",
+    "the_construction": "A phase-randomised real frame supplies the spectrum, as in T4E.20, and then N vortices are planted rather than one. Every centre is known by construction, so ground truth covers the whole frame rather than a single point, and density is set rather than hoped for.",
+    "why_not_a_real_frame_with_one_extra_vortex": "That would be more faithful in structure -- real fronts and filaments rather than N Gaussians -- but the true centres of the real field's own features are unknown, so a recovered feature could not be scored, and a planted vortex could be contaminated by a real one nearby. Known truth for every feature is worth more here than structural realism, and the trade is disclosed rather than assumed.",
+    "what_this_still_is_not": "N Gaussians are not fronts, filaments or sheared bands. The background matches the record on spectrum, feature density, scale distribution and amplitude distribution, and does not match it on the SHAPE of its incoherent structure. A design that matched that too would need real fields with known truth, which do not exist."
+  },
+  "the_planting": {
+    "count_per_frame": "Drawn uniformly from 3 to 10, which is the range the real record yields under identical raw extraction, with a median of 7.",
+    "scales": "Drawn from the real record's measured feature-scale distribution: median 3.67 cells, range 1.73 to 11.32.",
+    "amplitudes": "Drawn to give peak-to-background ratios spanning the real record's range, 8 to 32, median 16.",
+    "asymmetry": "Stretch factors 1.0, 1.5 and 2.5 as in T4E.20, drawn per vortex with the axis drawn uniformly, so no fixed bearing can masquerade as a result.",
+    "separation": "Planted centres are at least 8 cells apart and at least 12 cells from every edge, so the R13 off-frame rule cannot fire and two plantings cannot be confused for one. The separation is declared, not tuned: closer than that and a missed recovery could not be distinguished from a merge."
+  },
+  "the_validity_gate_and_its_code": {
+    "why_this_section_exists": "T4E.20's gate disqualified a background yielding 'hundreds, or none' and its CODE tested only an upper bound, so it passed a background yielding none. A gate whose code does not match its declaration is not a gate. This is the third time in one session that a check has read as rigorous in prose and been weaker in execution.",
+    "the_gate": "The synthetic frames must yield, under identical raw extraction, a median feature count in [4, 10] inclusive AND no frame above 40 AND a median strictly greater than zero. All three conditions are checked in code, and a test asserts that the coded gate rejects a background yielding none -- which is the case that slipped through last time.",
+    "if_it_fails": "The slice reports that its synthetic evidence is not representative and stops, without tuning the background until the numbers look right."
+  },
+  "the_prediction_declared_before_the_measurement": {
+    "the_question": "Does competition between features account for the gap between T4E.20's 10.2 km and the record's 33.8 km?",
+    "if_competition_explains_the_gap": "At real density the symmetric offset rises toward the real 1.63 cells. Suppression displaces or removes the maximum that would otherwise mark a centre, and the surviving feature sits further from the truth.",
+    "if_it_does_not": "The symmetric offset stays near T4E.20's 0.37 cells even at density 7. That would mean neither asymmetry alone nor competition explains the real offset, and the remaining candidates are the shape of real incoherent structure, the non-Gaussian profile of a real cyclone, or a genuine physical difference between an 850 hPa vorticity maximum and an agency's surface centre.",
+    "the_reading_that_is_forbidden": "Whichever way it falls, this design cannot show that cause A explains ALL of the real offset, because N Gaussians on a phase-randomised spectrum still are not a real vorticity field. It can show whether density matters, and by how much."
+  },
+  "what_is_measured": {
+    "per_planted_vortex": "offset in cells to the nearest extracted feature, whether it was recovered at all, the recovered scale against the planted one, and the offset direction against the planted stretch axis",
+    "per_frame": "planted count, extracted count, plantings never recovered, and extracted features matching no planting",
+    "the_pairing_rule": "A planting is paired with the nearest extracted feature within 8 cells, which is the declared minimum separation, so a planting cannot be paired with its neighbour's feature. Plantings with nothing inside 8 cells are recorded as NOT RECOVERED and contribute to no offset statistic, and their count is reported beside every statistic."
+  },
+  "acceptance_for_this_slice": {
+    "condition_1": "The coded gate implements the declared gate, and a test asserts it rejects the T4E.20 case.",
+    "condition_2": "The symmetric control is reported first and separately, at the real density, against T4E.20's quiet-background figure.",
+    "condition_3": "Recovery and spurious-feature counts reported beside every offset statistic, never suppressed.",
+    "condition_4": "If the result does not separate competition from the remaining candidates, that is the result and is reported as such."
+  },
+  "what_this_slice_will_not_do": [
+    "It will not modify the extractor, and it will not propose a replacement estimator.",
+    "It will not restate the T4E.18 acceptance; if the conclusion is that about 34 km is intrinsic, restating the tolerance is its own declaration.",
+    "It will not evaluate any identity criterion.",
+    "It will not touch the 2022-2023 forecast-test period."
+  ],
+  "governing_rules": [
+    "Declare the prediction before the measurement.",
+    "The coded gate must implement the declared gate, and be tested against the case that slipped through.",
+    "A named refusal is preferable to an unsupported number.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "claim_boundary": "Synthetic fields settle a property of the extractor, not of the atmosphere. Nothing here licenses a claim about cyclones, the catalogue, or any identity criterion."
+}

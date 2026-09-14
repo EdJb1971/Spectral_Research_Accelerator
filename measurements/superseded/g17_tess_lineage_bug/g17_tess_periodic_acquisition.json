@@ -1,0 +1,2957 @@
+{
+  "schema": "spectral.tess-pool-acquisition/v1",
+  "discovery_schema": "spectral.tess-period-product-discovery/v1",
+  "discovery_sha256": "9c11a978530cec80803359a90b418cced8645c116da1e82b6454f8192d31e852",
+  "target_count": 64,
+  "downloaded_bytes": 124652160,
+  "raw_cache": "data/tess_g17_periodic_raw",
+  "targets": [
+    {
+      "tic_id": "8400842",
+      "timestamped_samples": 17355,
+      "finite_quality_zero_flux": 16787,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019331140908-s0019-0000000008400842-0164-s",
+          "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000008400842-0164-s_lc.fits",
+          "filename": "tess2019331140908-s0019-0000000008400842-0164-s_lc.fits",
+          "sector": 19,
+          "size_bytes": 1834560,
+          "provenance_name": "SPOC",
+          "content_sha256": "d8a0c1311a73ddb283b1323c9f4633a6fceb81c2d3dc3b44eec26afe40a9ffc3",
+          "cache_file": "d8a0c1311a73ddb283b1323c9f4633a6fceb81c2d3dc3b44eec26afe40a9ffc3.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "9006668",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18300,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000009006668-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000009006668-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000009006668-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "03253654c1ef1ccb4c2b00f022299e4cb98bcbad84fab8166bfab90014f3de27",
+          "cache_file": "03253654c1ef1ccb4c2b00f022299e4cb98bcbad84fab8166bfab90014f3de27.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "12423815",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18299,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000012423815-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000012423815-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000012423815-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "bbb4e3631e5e16a21dbd04b16f3b7e6c1f656d371421ac71674f360010dc87f0",
+          "cache_file": "bbb4e3631e5e16a21dbd04b16f3b7e6c1f656d371421ac71674f360010dc87f0.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "12862099",
+      "timestamped_samples": 19412,
+      "finite_quality_zero_flux": 12968,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018263035959-s0003-0000000012862099-0123-s",
+          "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000012862099-0123-s_lc.fits",
+          "filename": "tess2018263035959-s0003-0000000012862099-0123-s_lc.fits",
+          "sector": 3,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "98b35623b36b431e62bd8ad090f19d8d84ff58a214e4d78eddd74e1abe911176",
+          "cache_file": "98b35623b36b431e62bd8ad090f19d8d84ff58a214e4d78eddd74e1abe911176.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "15863518",
+      "timestamped_samples": 17850,
+      "finite_quality_zero_flux": 16427,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019357164649-s0020-0000000015863518-0165-s",
+          "data_uri": "mast:TESS/product/tess2019357164649-s0020-0000000015863518-0165-s_lc.fits",
+          "filename": "tess2019357164649-s0020-0000000015863518-0165-s_lc.fits",
+          "sector": 20,
+          "size_bytes": 1926720,
+          "provenance_name": "SPOC",
+          "content_sha256": "f60f0b64335c7aa525c72de6efe63b79785d1a37c5f5d7357befe94cd78f7860",
+          "cache_file": "f60f0b64335c7aa525c72de6efe63b79785d1a37c5f5d7357befe94cd78f7860.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "21535395",
+      "timestamped_samples": 19027,
+      "finite_quality_zero_flux": 18711,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020020091053-s0021-0000000021535395-0167-s",
+          "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000021535395-0167-s_lc.fits",
+          "filename": "tess2020020091053-s0021-0000000021535395-0167-s_lc.fits",
+          "sector": 21,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "8f465be6ef4713a50b13d575c545c21f6f682e47d871e16b334cd7b3ed71b97e",
+          "cache_file": "8f465be6ef4713a50b13d575c545c21f6f682e47d871e16b334cd7b3ed71b97e.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "25155310",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18278,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000025155310-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025155310-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000025155310-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "12ddd623b04bdd354f27b5c89287b3a25a800d65cdf2733a1d0d04ab98e2d790",
+          "cache_file": "12ddd623b04bdd354f27b5c89287b3a25a800d65cdf2733a1d0d04ab98e2d790.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "25375553",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18233,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000025375553-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000025375553-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000025375553-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "9fac03df5f38cb863665db9cb4b55c1929efd092983c0103f7b75df34a6bf605",
+          "cache_file": "9fac03df5f38cb863665db9cb4b55c1929efd092983c0103f7b75df34a6bf605.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "26880783",
+      "timestamped_samples": 19643,
+      "finite_quality_zero_flux": 18788,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2021175071901-s0040-0000000026880783-0211-s",
+          "data_uri": "mast:TESS/product/tess2021175071901-s0040-0000000026880783-0211-s_lc.fits",
+          "filename": "tess2021175071901-s0040-0000000026880783-0211-s_lc.fits",
+          "sector": 40,
+          "size_bytes": 2062080,
+          "provenance_name": "SPOC",
+          "content_sha256": "1db9e154efa15bac25ecd2d15efeb0b1f0f7c0bbc16602a12a83a67ad9ddf4f4",
+          "cache_file": "1db9e154efa15bac25ecd2d15efeb0b1f0f7c0bbc16602a12a83a67ad9ddf4f4.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "28900646",
+      "timestamped_samples": 17355,
+      "finite_quality_zero_flux": 16863,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019331140908-s0019-0000000028900646-0164-s",
+          "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000028900646-0164-s_lc.fits",
+          "filename": "tess2019331140908-s0019-0000000028900646-0164-s_lc.fits",
+          "sector": 19,
+          "size_bytes": 1834560,
+          "provenance_name": "SPOC",
+          "content_sha256": "e096453ed325ce74b0f1ab9ee32a273a137484bb0fc8ea56d631f80ceeccea29",
+          "cache_file": "e096453ed325ce74b0f1ab9ee32a273a137484bb0fc8ea56d631f80ceeccea29.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "29831208",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18278,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000029831208-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000029831208-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000029831208-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "fd046d6e32b118c372afcf25a386130abb4da52cc47697838bb3913cc2504260",
+          "cache_file": "fd046d6e32b118c372afcf25a386130abb4da52cc47697838bb3913cc2504260.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "29960110",
+      "timestamped_samples": 15973,
+      "finite_quality_zero_flux": 14759,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018292075959-s0004-0000000029960110-0124-s",
+          "data_uri": "mast:TESS/product/tess2018292075959-s0004-0000000029960110-0124-s_lc.fits",
+          "filename": "tess2018292075959-s0004-0000000029960110-0124-s_lc.fits",
+          "sector": 4,
+          "size_bytes": 1897920,
+          "provenance_name": "SPOC",
+          "content_sha256": "ca31d0b01ae71f37410feda2e1756f3bbc6f1c69b10b923656a571d10c7d059f",
+          "cache_file": "ca31d0b01ae71f37410feda2e1756f3bbc6f1c69b10b923656a571d10c7d059f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "32090583",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18274,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000032090583-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000032090583-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000032090583-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "95123398a403b30608b82d5a5b656cea12238c5da9242b07d0a79c769ba062ef",
+          "cache_file": "95123398a403b30608b82d5a5b656cea12238c5da9242b07d0a79c769ba062ef.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "33911302",
+      "timestamped_samples": 18098,
+      "finite_quality_zero_flux": 14787,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2023237165326-s0069-0000000033911302-0264-s",
+          "data_uri": "mast:TESS/product/tess2023237165326-s0069-0000000033911302-0264-s_lc.fits",
+          "filename": "tess2023237165326-s0069-0000000033911302-0264-s_lc.fits",
+          "sector": 69,
+          "size_bytes": 1886400,
+          "provenance_name": "SPOC",
+          "content_sha256": "09d8ee0ab5cd3649829693235c70990aad6356284360e702f67d8f3766f7fa00",
+          "cache_file": "09d8ee0ab5cd3649829693235c70990aad6356284360e702f67d8f3766f7fa00.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "38846515",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 15882,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000038846515-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000038846515-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000038846515-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "5fdb743ebcd83c1ab98e36d8a22e905b1bd870611745104f961200efea5d03ee",
+          "cache_file": "5fdb743ebcd83c1ab98e36d8a22e905b1bd870611745104f961200efea5d03ee.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "47425697",
+      "timestamped_samples": 18183,
+      "finite_quality_zero_flux": 14888,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020238165205-s0029-0000000047425697-0193-s",
+          "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000047425697-0193-s_lc.fits",
+          "filename": "tess2020238165205-s0029-0000000047425697-0193-s_lc.fits",
+          "sector": 29,
+          "size_bytes": 1915200,
+          "provenance_name": "SPOC",
+          "content_sha256": "8a8799d5769d05f9652353a1639c35c44ab0f4d11f6c48ddba0cf3e2178cfd2f",
+          "cache_file": "8a8799d5769d05f9652353a1639c35c44ab0f4d11f6c48ddba0cf3e2178cfd2f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "51912829",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18275,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000051912829-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000051912829-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000051912829-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "dbae5d7cdc7d1eb8bc32619ee0f6cd0ab3f144de65ff7fedaf3904d051c70de3",
+          "cache_file": "dbae5d7cdc7d1eb8bc32619ee0f6cd0ab3f144de65ff7fedaf3904d051c70de3.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "55650590",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 15377,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000055650590-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000055650590-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000055650590-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "dd088595d3f5af118c60bfaae1acb07ed994f7b02c99103e92e7b4f506f258e0",
+          "cache_file": "dd088595d3f5af118c60bfaae1acb07ed994f7b02c99103e92e7b4f506f258e0.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "58542531",
+      "timestamped_samples": 17355,
+      "finite_quality_zero_flux": 16893,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019331140908-s0019-0000000058542531-0164-s",
+          "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000058542531-0164-s_lc.fits",
+          "filename": "tess2019331140908-s0019-0000000058542531-0164-s_lc.fits",
+          "sector": 19,
+          "size_bytes": 1834560,
+          "provenance_name": "SPOC",
+          "content_sha256": "df49964bc8a3cbc500e434bd2131c9c89a398d9c8b032f5814ff4db60c5dcdea",
+          "cache_file": "df49964bc8a3cbc500e434bd2131c9c89a398d9c8b032f5814ff4db60c5dcdea.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "63898957",
+      "timestamped_samples": 19412,
+      "finite_quality_zero_flux": 12857,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018263035959-s0003-0000000063898957-0123-s",
+          "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000063898957-0123-s_lc.fits",
+          "filename": "tess2018263035959-s0003-0000000063898957-0123-s_lc.fits",
+          "sector": 3,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "e638f12a376fc3a2eaf586ef90ce8528d4b8ce41a5efca7e6925917e813dd779",
+          "cache_file": "e638f12a376fc3a2eaf586ef90ce8528d4b8ce41a5efca7e6925917e813dd779.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "67418624",
+      "timestamped_samples": 16648,
+      "finite_quality_zero_flux": 14829,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019306063752-s0018-0000000067418624-0162-s",
+          "data_uri": "mast:TESS/product/tess2019306063752-s0018-0000000067418624-0162-s_lc.fits",
+          "filename": "tess2019306063752-s0018-0000000067418624-0162-s_lc.fits",
+          "sector": 18,
+          "size_bytes": 1785600,
+          "provenance_name": "SPOC",
+          "content_sha256": "07ebbcc659dede851fff9e2b7e7507a6d437d35089b78177623f2fcd11b7a640",
+          "cache_file": "07ebbcc659dede851fff9e2b7e7507a6d437d35089b78177623f2fcd11b7a640.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "67646988",
+      "timestamped_samples": 19027,
+      "finite_quality_zero_flux": 17342,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020020091053-s0021-0000000067646988-0167-s",
+          "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000067646988-0167-s_lc.fits",
+          "filename": "tess2020020091053-s0021-0000000067646988-0167-s_lc.fits",
+          "sector": 21,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "6233832175a77776c6248481345079049680d8e4d5a6517e35479a078b34f7a2",
+          "cache_file": "6233832175a77776c6248481345079049680d8e4d5a6517e35479a078b34f7a2.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "67666096",
+      "timestamped_samples": 19027,
+      "finite_quality_zero_flux": 17345,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020020091053-s0021-0000000067666096-0167-s",
+          "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000067666096-0167-s_lc.fits",
+          "filename": "tess2020020091053-s0021-0000000067666096-0167-s_lc.fits",
+          "sector": 21,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "1a5f5150057d7cfb701387c4a64d326bac2c871e75b30b647ab1db524d040125",
+          "cache_file": "1a5f5150057d7cfb701387c4a64d326bac2c871e75b30b647ab1db524d040125.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "70440470",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18086,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000070440470-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000070440470-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000070440470-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "17a3f6fd84fd88df1f860797c9d0773ed85aebbaf349c71c86dfaae4ca0a747c",
+          "cache_file": "17a3f6fd84fd88df1f860797c9d0773ed85aebbaf349c71c86dfaae4ca0a747c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "76989773",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18300,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000076989773-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000076989773-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000076989773-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "15654ff998845449c0d594cee972679e023f1b8dd2ca6fc37ee544701f4871b7",
+          "cache_file": "15654ff998845449c0d594cee972679e023f1b8dd2ca6fc37ee544701f4871b7.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "77031414",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18300,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000077031414-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000077031414-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000077031414-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "b36451b7db0b0663c64733eff4adc269702694111289acce355777cc1b07d7cb",
+          "cache_file": "b36451b7db0b0663c64733eff4adc269702694111289acce355777cc1b07d7cb.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "77044471",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18299,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000077044471-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000077044471-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000077044471-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "910381fa2f431de54a884bae71d299606225e201f34f5213215060a9129e75fc",
+          "cache_file": "910381fa2f431de54a884bae71d299606225e201f34f5213215060a9129e75fc.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "80166433",
+      "timestamped_samples": 16812,
+      "finite_quality_zero_flux": 13474,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020186164531-s0027-0000000080166433-0189-s",
+          "data_uri": "mast:TESS/product/tess2020186164531-s0027-0000000080166433-0189-s_lc.fits",
+          "filename": "tess2020186164531-s0027-0000000080166433-0189-s_lc.fits",
+          "sector": 27,
+          "size_bytes": 1785600,
+          "provenance_name": "SPOC",
+          "content_sha256": "9185e00670e77bb7281339cf1645303ba6e2178f76ecda1a8059748044e74947",
+          "cache_file": "9185e00670e77bb7281339cf1645303ba6e2178f76ecda1a8059748044e74947.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "81831095",
+      "timestamped_samples": 19510,
+      "finite_quality_zero_flux": 19475,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2022302161335-s0058-0000000081831095-0247-s",
+          "data_uri": "mast:TESS/product/tess2022302161335-s0058-0000000081831095-0247-s_lc.fits",
+          "filename": "tess2022302161335-s0058-0000000081831095-0247-s_lc.fits",
+          "sector": 58,
+          "size_bytes": 2027520,
+          "provenance_name": "SPOC",
+          "content_sha256": "1a378067b54aa259c885f94b2dabb47c0ff6750c437f4f0aabc8d92e412865df",
+          "cache_file": "1a378067b54aa259c885f94b2dabb47c0ff6750c437f4f0aabc8d92e412865df.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "85031598",
+      "timestamped_samples": 17355,
+      "finite_quality_zero_flux": 16782,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019331140908-s0019-0000000085031598-0164-s",
+          "data_uri": "mast:TESS/product/tess2019331140908-s0019-0000000085031598-0164-s_lc.fits",
+          "filename": "tess2019331140908-s0019-0000000085031598-0164-s_lc.fits",
+          "sector": 19,
+          "size_bytes": 1834560,
+          "provenance_name": "SPOC",
+          "content_sha256": "468dfa4a5678b78956b59bdc3791261fb93a554554f1fc71c06da74dbb5e0e77",
+          "cache_file": "468dfa4a5678b78956b59bdc3791261fb93a554554f1fc71c06da74dbb5e0e77.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "87090944",
+      "timestamped_samples": 18574,
+      "finite_quality_zero_flux": 15686,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2022330142927-s0059-0000000087090944-0248-s",
+          "data_uri": "mast:TESS/product/tess2022330142927-s0059-0000000087090944-0248-s_lc.fits",
+          "filename": "tess2022330142927-s0059-0000000087090944-0248-s_lc.fits",
+          "sector": 59,
+          "size_bytes": 1932480,
+          "provenance_name": "SPOC",
+          "content_sha256": "0fe353706cbd2735cce38693e1e845b976f223980d12610e406d340774da31e1",
+          "cache_file": "0fe353706cbd2735cce38693e1e845b976f223980d12610e406d340774da31e1.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "89020549",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18273,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000089020549-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000089020549-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000089020549-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "8341d2e2eb76f2d1cb4f4e991023e801d887576c837b08b07114246c8abd2b9f",
+          "cache_file": "8341d2e2eb76f2d1cb4f4e991023e801d887576c837b08b07114246c8abd2b9f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "89389197",
+      "timestamped_samples": 18035,
+      "finite_quality_zero_flux": 14739,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2022190063128-s0054-0000000089389197-0227-s",
+          "data_uri": "mast:TESS/product/tess2022190063128-s0054-0000000089389197-0227-s_lc.fits",
+          "filename": "tess2022190063128-s0054-0000000089389197-0227-s_lc.fits",
+          "sector": 54,
+          "size_bytes": 1918080,
+          "provenance_name": "SPOC",
+          "content_sha256": "c1313cf0cf65b966f56bcefa85d875cef3d9da28f3c671e648e4da2558ad97da",
+          "cache_file": "c1313cf0cf65b966f56bcefa85d875cef3d9da28f3c671e648e4da2558ad97da.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "97409519",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 17477,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000097409519-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000097409519-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000097409519-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "29e9b7a3289f66231c1cf69896e8d5908120fb0f3b2150ed532fdd6ee25174b4",
+          "cache_file": "29e9b7a3289f66231c1cf69896e8d5908120fb0f3b2150ed532fdd6ee25174b4.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "99834717",
+      "timestamped_samples": 19027,
+      "finite_quality_zero_flux": 17335,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020020091053-s0021-0000000099834717-0167-s",
+          "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000099834717-0167-s_lc.fits",
+          "filename": "tess2020020091053-s0021-0000000099834717-0167-s_lc.fits",
+          "sector": 21,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "31ff8843c6c8464f8570d704928fb1ba056afb1d28aa97e1de752088aee2e579",
+          "cache_file": "31ff8843c6c8464f8570d704928fb1ba056afb1d28aa97e1de752088aee2e579.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "100097716",
+      "timestamped_samples": 18183,
+      "finite_quality_zero_flux": 14286,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020238165205-s0029-0000000100097716-0193-s",
+          "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000100097716-0193-s_lc.fits",
+          "filename": "tess2020238165205-s0029-0000000100097716-0193-s_lc.fits",
+          "sector": 29,
+          "size_bytes": 1915200,
+          "provenance_name": "SPOC",
+          "content_sha256": "715188cbcde54efa8be06c5d97f6c28f28d543d8913d60d93a64b1d14c757b34",
+          "cache_file": "715188cbcde54efa8be06c5d97f6c28f28d543d8913d60d93a64b1d14c757b34.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "116483514",
+      "timestamped_samples": 16834,
+      "finite_quality_zero_flux": 15459,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019253231442-s0016-0000000116483514-0152-s",
+          "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000116483514-0152-s_lc.fits",
+          "filename": "tess2019253231442-s0016-0000000116483514-0152-s_lc.fits",
+          "sector": 16,
+          "size_bytes": 1805760,
+          "provenance_name": "SPOC",
+          "content_sha256": "50b8c161643ff7a987f005e2a76993c1ce172db3a5b43dd3c585835362384368",
+          "cache_file": "50b8c161643ff7a987f005e2a76993c1ce172db3a5b43dd3c585835362384368.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "117789567",
+      "timestamped_samples": 18348,
+      "finite_quality_zero_flux": 18316,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2021204101404-s0041-0000000117789567-0212-s",
+          "data_uri": "mast:TESS/product/tess2021204101404-s0041-0000000117789567-0212-s_lc.fits",
+          "filename": "tess2021204101404-s0041-0000000117789567-0212-s_lc.fits",
+          "sector": 41,
+          "size_bytes": 1944000,
+          "provenance_name": "SPOC",
+          "content_sha256": "b6acc9537ce7e615a02b17e9db96a9ac061821948a4fab560af4fe1975da3cdc",
+          "cache_file": "b6acc9537ce7e615a02b17e9db96a9ac061821948a4fab560af4fe1975da3cdc.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "120610833",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18298,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000120610833-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000120610833-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000120610833-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "1160efdfa1f361e024faac257d1a50c236b2513da8c421fa2a8d83919693ce1c",
+          "cache_file": "1160efdfa1f361e024faac257d1a50c236b2513da8c421fa2a8d83919693ce1c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "120757718",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 11599,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000120757718-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000120757718-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000120757718-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "d2eaede57c7c33f15894cdcc870608b986d912fd8637f50bff1fa3a11742bf00",
+          "cache_file": "d2eaede57c7c33f15894cdcc870608b986d912fd8637f50bff1fa3a11742bf00.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "120916706",
+      "timestamped_samples": 19412,
+      "finite_quality_zero_flux": 12901,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018263035959-s0003-0000000120916706-0123-s",
+          "data_uri": "mast:TESS/product/tess2018263035959-s0003-0000000120916706-0123-s_lc.fits",
+          "filename": "tess2018263035959-s0003-0000000120916706-0123-s_lc.fits",
+          "sector": 3,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "9bfcead7755c7dd51e0e1c64d30a4928fa894aba015d2b73f0d4ef21bc2d8414",
+          "cache_file": "9bfcead7755c7dd51e0e1c64d30a4928fa894aba015d2b73f0d4ef21bc2d8414.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "125442121",
+      "timestamped_samples": 16834,
+      "finite_quality_zero_flux": 13799,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019253231442-s0016-0000000125442121-0152-s",
+          "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000125442121-0152-s_lc.fits",
+          "filename": "tess2019253231442-s0016-0000000125442121-0152-s_lc.fits",
+          "sector": 16,
+          "size_bytes": 1805760,
+          "provenance_name": "SPOC",
+          "content_sha256": "3db53a64f67723fcd4be52d77f595fb79cf3eee8b40e507db7ec60aea7be588c",
+          "cache_file": "3db53a64f67723fcd4be52d77f595fb79cf3eee8b40e507db7ec60aea7be588c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "129979528",
+      "timestamped_samples": 16648,
+      "finite_quality_zero_flux": 14829,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019306063752-s0018-0000000129979528-0162-s",
+          "data_uri": "mast:TESS/product/tess2019306063752-s0018-0000000129979528-0162-s_lc.fits",
+          "filename": "tess2019306063752-s0018-0000000129979528-0162-s_lc.fits",
+          "sector": 18,
+          "size_bytes": 1785600,
+          "provenance_name": "SPOC",
+          "content_sha256": "9d0e72379fd1af6b9370c1cbc5ca348a510d30965aac0cb9e111bb930dc8b993",
+          "cache_file": "9d0e72379fd1af6b9370c1cbc5ca348a510d30965aac0cb9e111bb930dc8b993.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "137881699",
+      "timestamped_samples": 19027,
+      "finite_quality_zero_flux": 18607,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020020091053-s0021-0000000137881699-0167-s",
+          "data_uri": "mast:TESS/product/tess2020020091053-s0021-0000000137881699-0167-s_lc.fits",
+          "filename": "tess2020020091053-s0021-0000000137881699-0167-s_lc.fits",
+          "sector": 21,
+          "size_bytes": 1998720,
+          "provenance_name": "SPOC",
+          "content_sha256": "a8699468fbfbb9c606dd2ce6ce4b109c66128c8a432a6f6cc2d231de45fef72c",
+          "cache_file": "a8699468fbfbb9c606dd2ce6ce4b109c66128c8a432a6f6cc2d231de45fef72c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "139285832",
+      "timestamped_samples": 17326,
+      "finite_quality_zero_flux": 14509,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020212050318-s0028-0000000139285832-0190-s",
+          "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000139285832-0190-s_lc.fits",
+          "filename": "tess2020212050318-s0028-0000000139285832-0190-s_lc.fits",
+          "sector": 28,
+          "size_bytes": 1848960,
+          "provenance_name": "SPOC",
+          "content_sha256": "91de293c4cd50565e024814d218cb90336d7302a5d7c2e77401663e2e17e7f5c",
+          "cache_file": "91de293c4cd50565e024814d218cb90336d7302a5d7c2e77401663e2e17e7f5c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "140068425",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18276,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000140068425-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000140068425-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000140068425-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "dbd1dab619eb75b78e5f2f2d6ae4e63826eb697cf28020dd6d9ed7dcde206f5b",
+          "cache_file": "dbd1dab619eb75b78e5f2f2d6ae4e63826eb697cf28020dd6d9ed7dcde206f5b.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "140691463",
+      "timestamped_samples": 17337,
+      "finite_quality_zero_flux": 15541,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019058134432-s0009-0000000140691463-0139-s",
+          "data_uri": "mast:TESS/product/tess2019058134432-s0009-0000000140691463-0139-s_lc.fits",
+          "filename": "tess2019058134432-s0009-0000000140691463-0139-s_lc.fits",
+          "sector": 9,
+          "size_bytes": 1848960,
+          "provenance_name": "SPOC",
+          "content_sha256": "57e927a131a3932f8331a60bbbbfdfd817330591d6885074554d515ca133c7cb",
+          "cache_file": "57e927a131a3932f8331a60bbbbfdfd817330591d6885074554d515ca133c7cb.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "144065872",
+      "timestamped_samples": 19261,
+      "finite_quality_zero_flux": 18276,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018206045859-s0001-0000000144065872-0120-s",
+          "data_uri": "mast:TESS/product/tess2018206045859-s0001-0000000144065872-0120-s_lc.fits",
+          "filename": "tess2018206045859-s0001-0000000144065872-0120-s_lc.fits",
+          "sector": 1,
+          "size_bytes": 2039040,
+          "provenance_name": "SPOC",
+          "content_sha256": "a175f9d7d95fdbf1badf827d6f16781c6244b9fb2725bf53dd67f2ec0b5d455f",
+          "cache_file": "a175f9d7d95fdbf1badf827d6f16781c6244b9fb2725bf53dd67f2ec0b5d455f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "144276942",
+      "timestamped_samples": 17326,
+      "finite_quality_zero_flux": 14286,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020212050318-s0028-0000000144276942-0190-s",
+          "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000144276942-0190-s_lc.fits",
+          "filename": "tess2020212050318-s0028-0000000144276942-0190-s_lc.fits",
+          "sector": 28,
+          "size_bytes": 1848960,
+          "provenance_name": "SPOC",
+          "content_sha256": "0e24bc26b3838c9fe098a0b7ce04799f1861277c4e409a8786a4da57b8fcf4d6",
+          "cache_file": "0e24bc26b3838c9fe098a0b7ce04799f1861277c4e409a8786a4da57b8fcf4d6.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "144336525",
+      "timestamped_samples": 17326,
+      "finite_quality_zero_flux": 13834,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020212050318-s0028-0000000144336525-0190-s",
+          "data_uri": "mast:TESS/product/tess2020212050318-s0028-0000000144336525-0190-s_lc.fits",
+          "filename": "tess2020212050318-s0028-0000000144336525-0190-s_lc.fits",
+          "sector": 28,
+          "size_bytes": 1848960,
+          "provenance_name": "SPOC",
+          "content_sha256": "05a7796563420e3ab37fd7cd99c7452c795538c946c02bf0e19675a62a377acd",
+          "cache_file": "05a7796563420e3ab37fd7cd99c7452c795538c946c02bf0e19675a62a377acd.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "147950620",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 18423,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000147950620-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000147950620-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000147950620-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "b668563ac1c2f22efe9b1174a2db9c3ea657d42e104a8d8059831cab3ee8f338",
+          "cache_file": "b668563ac1c2f22efe9b1174a2db9c3ea657d42e104a8d8059831cab3ee8f338.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "148914726",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 14964,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000148914726-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000148914726-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000148914726-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "6f82e25a00a5b26b23f103a94663797dc62372a3b9ff0d6ae6e7e811d977cd04",
+          "cache_file": "6f82e25a00a5b26b23f103a94663797dc62372a3b9ff0d6ae6e7e811d977cd04.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "153976959",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 18424,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000153976959-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000153976959-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000153976959-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "80e8de9c77a18c54d19cc6823801997afc0f6b764bfa5aba5f6eb80e4030d709",
+          "cache_file": "80e8de9c77a18c54d19cc6823801997afc0f6b764bfa5aba5f6eb80e4030d709.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "154383539",
+      "timestamped_samples": 17981,
+      "finite_quality_zero_flux": 15603,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019226182529-s0015-0000000154383539-0151-s",
+          "data_uri": "mast:TESS/product/tess2019226182529-s0015-0000000154383539-0151-s_lc.fits",
+          "filename": "tess2019226182529-s0015-0000000154383539-0151-s_lc.fits",
+          "sector": 15,
+          "size_bytes": 1906560,
+          "provenance_name": "SPOC",
+          "content_sha256": "09c770fd8bc2dca712cde3e9e1d3a00518313645142676ee2f60ce07041cbd8c",
+          "cache_file": "09c770fd8bc2dca712cde3e9e1d3a00518313645142676ee2f60ce07041cbd8c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "157586003",
+      "timestamped_samples": 17248,
+      "finite_quality_zero_flux": 16940,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020160202036-s0026-0000000157586003-0188-s",
+          "data_uri": "mast:TESS/product/tess2020160202036-s0026-0000000157586003-0188-s_lc.fits",
+          "filename": "tess2020160202036-s0026-0000000157586003-0188-s_lc.fits",
+          "sector": 26,
+          "size_bytes": 1820160,
+          "provenance_name": "SPOC",
+          "content_sha256": "5ac58804e2c11bfe9a4a47fa4025eee80b56ef62bd097eff23d2d29329e30905",
+          "cache_file": "5ac58804e2c11bfe9a4a47fa4025eee80b56ef62bd097eff23d2d29329e30905.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "158025009",
+      "timestamped_samples": 16834,
+      "finite_quality_zero_flux": 15399,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019253231442-s0016-0000000158025009-0152-s",
+          "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000158025009-0152-s_lc.fits",
+          "filename": "tess2019253231442-s0016-0000000158025009-0152-s_lc.fits",
+          "sector": 16,
+          "size_bytes": 1805760,
+          "provenance_name": "SPOC",
+          "content_sha256": "a1d80c560c6e67674b4df889604419245e2f182f6da8f45af6eb7995cde7399c",
+          "cache_file": "a1d80c560c6e67674b4df889604419245e2f182f6da8f45af6eb7995cde7399c.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "158170594",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 18231,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000158170594-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000158170594-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000158170594-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "a86e68b642a5532df6fd0b871f5311c98a61847b9cdb8f823428b9347146615f",
+          "cache_file": "a86e68b642a5532df6fd0b871f5311c98a61847b9cdb8f823428b9347146615f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "158324245",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 18420,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000158324245-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000158324245-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000158324245-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "06ce86a5dac99a7ee4152199330025dc7f6c6d25e426e571fda4e221e35ed342",
+          "cache_file": "06ce86a5dac99a7ee4152199330025dc7f6c6d25e426e571fda4e221e35ed342.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "160045097",
+      "timestamped_samples": 18654,
+      "finite_quality_zero_flux": 18423,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019198215352-s0014-0000000160045097-0150-s",
+          "data_uri": "mast:TESS/product/tess2019198215352-s0014-0000000160045097-0150-s_lc.fits",
+          "filename": "tess2019198215352-s0014-0000000160045097-0150-s_lc.fits",
+          "sector": 14,
+          "size_bytes": 1964160,
+          "provenance_name": "SPOC",
+          "content_sha256": "f202f78f8776922e1997e96edb35804dc7b1542756444ab81e918f5e690e8264",
+          "cache_file": "f202f78f8776922e1997e96edb35804dc7b1542756444ab81e918f5e690e8264.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "160708862",
+      "timestamped_samples": 18535,
+      "finite_quality_zero_flux": 17554,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2021118034608-s0038-0000000160708862-0209-s",
+          "data_uri": "mast:TESS/product/tess2021118034608-s0038-0000000160708862-0209-s_lc.fits",
+          "filename": "tess2021118034608-s0038-0000000160708862-0209-s_lc.fits",
+          "sector": 38,
+          "size_bytes": 1952640,
+          "provenance_name": "SPOC",
+          "content_sha256": "6b5187ba48c485a5ed788cd112a1359a3d5f71e516647d92be7a912f9fad9801",
+          "cache_file": "6b5187ba48c485a5ed788cd112a1359a3d5f71e516647d92be7a912f9fad9801.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "164173105",
+      "timestamped_samples": 16834,
+      "finite_quality_zero_flux": 14400,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019253231442-s0016-0000000164173105-0152-s",
+          "data_uri": "mast:TESS/product/tess2019253231442-s0016-0000000164173105-0152-s_lc.fits",
+          "filename": "tess2019253231442-s0016-0000000164173105-0152-s_lc.fits",
+          "sector": 16,
+          "size_bytes": 1805760,
+          "provenance_name": "SPOC",
+          "content_sha256": "cf5bb3854ef4d6de9fe65eb5c2a096d2f2e54e87908a0d2902fc0871510727b1",
+          "cache_file": "cf5bb3854ef4d6de9fe65eb5c2a096d2f2e54e87908a0d2902fc0871510727b1.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "183120439",
+      "timestamped_samples": 19811,
+      "finite_quality_zero_flux": 16022,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2019169103026-s0013-0000000183120439-0146-s",
+          "data_uri": "mast:TESS/product/tess2019169103026-s0013-0000000183120439-0146-s_lc.fits",
+          "filename": "tess2019169103026-s0013-0000000183120439-0146-s_lc.fits",
+          "sector": 13,
+          "size_bytes": 2079360,
+          "provenance_name": "SPOC",
+          "content_sha256": "1419ed0086dfcc585c0433daf7ead49139c590fa6dde7384e77745b793af0c0e",
+          "cache_file": "1419ed0086dfcc585c0433daf7ead49139c590fa6dde7384e77745b793af0c0e.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "183593642",
+      "timestamped_samples": 18183,
+      "finite_quality_zero_flux": 14552,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2020238165205-s0029-0000000183593642-0193-s",
+          "data_uri": "mast:TESS/product/tess2020238165205-s0029-0000000183593642-0193-s_lc.fits",
+          "filename": "tess2020238165205-s0029-0000000183593642-0193-s_lc.fits",
+          "sector": 29,
+          "size_bytes": 1915200,
+          "provenance_name": "SPOC",
+          "content_sha256": "9f619802a70589c956d5db209ab2a35258b3ce83e146273208fa9780addc571f",
+          "cache_file": "9f619802a70589c956d5db209ab2a35258b3ce83e146273208fa9780addc571f.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tic_id": "183985250",
+      "timestamped_samples": 18699,
+      "finite_quality_zero_flux": 18299,
+      "toi": "193.01",
+      "disposition": "CP",
+      "orbital_period_seconds": 68434.3728,
+      "period_error_upper_days": 1e-07,
+      "period_error_lower_days": -1e-07,
+      "products": [
+        {
+          "observation_id": "tess2018234235059-s0002-0000000183985250-0121-s",
+          "data_uri": "mast:TESS/product/tess2018234235059-s0002-0000000183985250-0121-s_lc.fits",
+          "filename": "tess2018234235059-s0002-0000000183985250-0121-s_lc.fits",
+          "sector": 2,
+          "size_bytes": 2004480,
+          "provenance_name": "SPOC",
+          "content_sha256": "d8d264184915509dc8df0ebc77ce3d96f252de99759af46b260187a2ee2ebc0b",
+          "cache_file": "d8d264184915509dc8df0ebc77ce3d96f252de99759af46b260187a2ee2ebc0b.fits",
+          "publication": "windows-rename-no-replace",
+          "fits_checksum": [
+            {
+              "hdu": "PRIMARY",
+              "checksum_present": true,
+              "checksum_valid": true,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "LIGHTCURVE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            },
+            {
+              "hdu": "APERTURE",
+              "checksum_present": true,
+              "checksum_valid": false,
+              "datasum_present": false,
+              "datasum_valid": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "claim_boundary": "This receipt validates and binds raw archive products only. It does not derive G17 profile marginals or establish target independence, admission or exchangeability.",
+  "discovery_file": "measurements/g17_tess_periodic_product_discovery.json",
+  "discovery_file_sha256": "ac475ec20cf1e5c9db8b6e44f4606fe30c3085b7d7edb7ac98c9088efde9d52a"
+}

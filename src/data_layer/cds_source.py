@@ -48,7 +48,30 @@ CDS_VARIABLES: Mapping[str, str] = {
     "u": "u_component_of_wind",
     "v": "v_component_of_wind",
     "z": "geopotential",
+    # T4E.18. Relative vorticity, not `potential_vorticity`, which is a different CDS variable.
+    # Added because the identity path cannot join an external cyclone catalogue to a record of
+    # 850 hPa temperature: features there sit a median 153.9 km from a catalogue centre against
+    # a catalogue radius of 15.2 km. A cyclone IS a compact extremum in relative vorticity.
+    #
+    # In the southern hemisphere cyclonic rotation is NEGATIVE vorticity, and the registered
+    # extractor finds maxima, so a consumer of this variable in a southern crop must negate the
+    # field before extraction or it will locate anticyclones. That convention is declared in
+    # `data/identity_calibration/t4e18-vorticity-acquisition-design.json`; this map records
+    # what may be requested, not what is done with it afterwards.
+    "vo": "vorticity",
 }
+#: What this layer may REQUEST, which is deliberately wider than what the forecast laboratory
+#: consumes. `CANONICAL_VARIABLES` is the five-channel forecast set and is the default for
+#: `RegionalForecastConfig.variables`, so adding an acquisition variable to it would silently
+#: change every forecast configuration. Acquiring a field and forecasting on it are different
+#: acts, and T4E.18 needs the first without the second: relative vorticity is requested so that
+#: a cyclone centre is an extractable feature, and nothing forecasts on it.
+ACQUIRABLE_VARIABLES: Tuple[str, ...] = CANONICAL_VARIABLES + ("vo",)
+CDS_OUTPUT_ALIASES: Mapping[str, Tuple[str, ...]] = {
+    **VARIABLE_ALIASES,
+    "vo": ("vo", "vorticity"),
+}
+
 PRESSURE_LEVELS = (
     1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250,
     300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 775, 800, 825, 850, 875,
@@ -125,10 +148,12 @@ class CDSRegionalRequest:
         if not self.variables or len(set(self.variables)) != len(self.variables):
             raise InvalidParameterError("variables", self.variables,
                                         "a non-empty sequence of unique canonical variables")
-        unknown = sorted(set(self.variables) - set(CANONICAL_VARIABLES))
+        unknown = sorted(set(self.variables) - set(ACQUIRABLE_VARIABLES))
         if unknown:
             raise InvalidParameterError(
-                "variables", unknown, "canonical ERA5 pressure variables t/q/u/v/z")
+                "variables", unknown,
+                "an acquirable ERA5 pressure variable: %s"
+                % "/".join(ACQUIRABLE_VARIABLES))
         if not self.hours_utc or len(set(self.hours_utc)) != len(self.hours_utc):
             raise InvalidParameterError("hours_utc", self.hours_utc,
                                         "one or more unique UTC hours")
@@ -588,7 +613,7 @@ def _normalise_downloaded_dataset(
 
     renames: Dict[str, str] = {}
     for canonical in spec.variables:
-        aliases = VARIABLE_ALIASES[canonical]
+        aliases = CDS_OUTPUT_ALIASES[canonical]
         matches = [name for name in aliases if name in dataset.data_vars]
         if len(matches) != 1:
             raise DataSourceError(

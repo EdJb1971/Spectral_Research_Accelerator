@@ -12,6 +12,7 @@ from src.api.main import app
 from src.core.errors import InvalidParameterError
 from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             plan_representation_audit,
+                                            plan_sample_table_handoff,
                                             probe_delimited,
                                             require_independent_samples,
                                             run_representation_audit,
@@ -88,6 +89,52 @@ def test_capability_profile_routes_independent_tables_and_explains_spatial_refus
     assert boundary["reason_code"] == "requires_spatial_grid_2d"
     assert "no declared 2D grid" in boundary["reason"]
     assert len(profile["profile_sha256"]) == 64
+
+
+def test_planning_handoff_binds_exact_object_declaration_profile_and_existing_planner():
+    payload = dataset()
+    handoff = plan_sample_table_handoff(
+        payload, filename="experiment.csv", delimiter=",", declaration=declaration(),
+        operation="representation_audit")
+    profile = sample_table_capability_profile(
+        payload, filename="experiment.csv", delimiter=",", declaration=declaration())
+
+    assert handoff["schema"] == "spectral.sample-table-planning-handoff.v1"
+    assert handoff["object"]["identity"] == probe_delimited(
+        payload, filename="experiment.csv")["content_sha256"]
+    assert handoff["declaration"] == declaration().canonical()
+    assert handoff["capability_profile_sha256"] == profile["profile_sha256"]
+    assert handoff["destination"] == {
+        "kind": "existing_ingress_planner", "method": "POST",
+        "api_path": "/api/v1/ingress/plan",
+        "plan_schema": "spectral.representation-audit-plan.v1",
+        "workspace": "acquire",
+    }
+    assert handoff["status"] == "READY_FOR_PLANNING"
+    assert handoff["request"]["file_binding_sha256"] == handoff["object"]["identity"]
+    assert handoff["request"]["declaration"] == declaration().canonical()
+    assert handoff["automatic_actions"] == []
+    assert len(handoff["handoff_sha256"]) == 64
+
+
+def test_capability_profile_exposes_only_registered_planning_paths():
+    profile = sample_table_capability_profile(
+        dataset(), filename="experiment.csv", delimiter=",", declaration=declaration())
+    planned = {name for name, decision in profile["operations"].items()
+               if decision["planning_path"] is not None}
+    assert planned == {"representation_audit", "redundancy_structure_audit",
+                       "conditional_information_audit", "stable_subspace_generation"}
+    with pytest.raises(InvalidParameterError, match="existing registered planning path"):
+        plan_sample_table_handoff(
+            dataset(), filename="experiment.csv", delimiter=",", declaration=declaration(),
+            operation="boundary_lab")
+    grouped = SampleTableDeclaration(
+        roles={**declaration().roles, "sample": "group"},
+        sample_relationship="grouped", units=declaration().units)
+    with pytest.raises(InvalidParameterError, match="requires_independent_samples"):
+        plan_sample_table_handoff(
+            dataset(), filename="experiment.csv", delimiter=",", declaration=grouped,
+            operation="representation_audit")
 
 
 def test_grouped_and_ordered_tables_name_the_safe_split_they_need_and_never_plan():
@@ -171,6 +218,13 @@ def test_http_workflow_is_file_first_and_reuses_the_exact_sealed_plan():
         data={"delimiter": ",", "declaration": json.dumps(declared)})
     assert routed.status_code == 200, routed.text
     assert routed.json()["operations"]["representation_audit"]["available"] is True
+    handoff = client.post(
+        "/api/v1/ingress/planning-handoff",
+        files={"file": ("experiment.csv", payload, "text/csv")},
+        data={"delimiter": ",", "declaration": json.dumps(declared),
+              "operation": "representation_audit"})
+    assert handoff.status_code == 200, handoff.text
+    assert handoff.json()["request"]["file_binding_sha256"] == routed.json()["identity"]
     planned = client.post(
         "/api/v1/ingress/plan", files={"file": ("experiment.csv", payload, "text/csv")},
         data={"delimiter": ",", "declaration": json.dumps(declared),

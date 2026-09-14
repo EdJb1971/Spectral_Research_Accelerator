@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BookOpen, FileText, Layers, RefreshCw } from 'lucide-react';
 import { apiService } from '../services/api';
 import * as types from '../types/api';
+import FindingDiscussion from './FindingDiscussion';
 
 interface Props {
   onError?: (message: string) => void;
@@ -279,6 +280,9 @@ export default function FindingsView({
                 {finding.summary_sha256.slice(0, 12)}
               </p>
 
+              <FindingDiscussion studyId={publishedStudyId} glossary={glossaryName}
+                onError={fail} />
+
               <Section title="What can be said" units={finding.claimable}
                 emptyNote="Nothing may be claimed from this record." />
 
@@ -350,6 +354,7 @@ export default function FindingsView({
                   {finding.rendered_text}
                 </pre>
               </details>
+
             </div>
           )}
 
@@ -543,7 +548,7 @@ export default function FindingsView({
                                border-teal-400/30 bg-teal-500/10 px-4 py-2 text-sm font-semibold
                                text-teal-200 hover:bg-teal-500/20 focus:outline-none
                                focus:ring-2 focus:ring-teal-400">
-                    Open Experiment Composer
+                    Start a new experiment
                   </button>
                 )}
                 <p className="mt-3 text-xs text-slate-500">

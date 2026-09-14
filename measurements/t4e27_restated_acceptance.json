@@ -1,0 +1,504 @@
+{
+  "measurement": "t4e27_restated_acceptance",
+  "declared_in": "data/identity_calibration/t4e27-position-tolerance-declaration.json",
+  "declaration_sha256": "f4ef59f66e28b0fa8903de4ef1b2528860402b57a0daf424be3504f5196b1ff2",
+  "adopted_in": "data/identity_calibration/t4e27-position-tolerance-adoption.json",
+  "adoption_sha256": "b68d119e761bd3c2d3f9ac787c0f829bad2e41093692368f65d1ac65a912a188",
+  "restates": "measurements/t4e18_acceptance.json",
+  "restates_sha256": "61d8acbb276b3efae51b875997d905322ceb2a701a99bafd0dbfaafb50c54796",
+  "measured_on": "2026-09-11",
+  "the_tolerance": {
+    "form": "quadrature sum of the declared components",
+    "estimator_localisation_km": 8.18625,
+    "estimator_provenance": "T4E.21 measured 0.295 cells on known ground truth at the record's own feature density; the grid is 27.75 km per cell from T4E.18's acquisition design",
+    "catalogue_provenance": "IBTrACS per-observation reported radius (T4E.17 signed)",
+    "excluded_component": "the separation between an 850 hPa relative-vorticity maximum and a surface centre. Not a component, because no defensible number for it exists here and one sized to make this pass would be fitting the bar to the result. The residual measures it instead."
+  },
+  "population": {
+    "source": "measurements/t4e18_acceptance.json",
+    "storms": 18,
+    "unchanged": "the same eighteen storms at the same deepest-interior observation per storm. T4E.19's 154-observation core population, its 200 km pairing and its dateline separation are deliberately not adopted, so the only thing that changed is the bar."
+  },
+  "condition_1_restated": {
+    "admitted": 2,
+    "judged": 17,
+    "refused": 1,
+    "refused_observations": [
+      "LINDA"
+    ],
+    "needed": 9,
+    "of_declared": 18,
+    "met": false,
+    "original_was": "2 of 18"
+  },
+  "condition_2_restated": {
+    "met": null,
+    "REFUSED": "not evaluable on the available evidence. Condition 2 asks for three or more features inside tolerance. The committed receipt carries each storm's nearest distance and a count of features inside the ORIGINAL radius, but not the distance to the third-nearest feature, so the count at any other bar cannot be recovered from it. Recomputing it requires the IBTrACS CSV, which T4E.17 bound by sha256 and did not commit, and which is not present on this machine. Refused by name rather than approximated.",
+    "what_would_lift_the_refusal": "the IBTrACS v04r01 South Pacific subset at sha256 631f76b9..., plus a re-run of the join that records the full per-storm distance list rather than only the nearest. That is its own work and is not done here."
+  },
+  "acceptance_is_partial_and_says_so": "Acceptance condition 3 of this task asked for conditions 1 and 2 both. Condition 1 is restated exactly; condition 2 is refused by name. This slice therefore meets its own acceptance in part, and that shortfall is reported rather than absorbed.",
+  "unexplained_residual": {
+    "median_km": 93.19065563921836,
+    "what_it_measures": "the component the tolerance deliberately omits -- how far apart a vorticity maximum and a surface centre are, over and above the catalogue's own uncertainty and this extractor's measured localisation error."
+  },
+  "per_storm": [
+    {
+      "storm": "FEHI",
+      "lat": -36.8,
+      "nature": "ET",
+      "nearest_km": 69.74156874419648,
+      "catalogue_radius_km": 8.903726199952057,
+      "tolerance_km": 12.09508285652532,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 57.64648588767116,
+      "refusal": null
+    },
+    {
+      "storm": "GITA",
+      "lat": -38.6,
+      "nature": "ET",
+      "nearest_km": 113.71654544375832,
+      "catalogue_radius_km": 89.38408333273084,
+      "tolerance_km": 89.75816978022152,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 23.9583756635368,
+      "refusal": null
+    },
+    {
+      "storm": "HOLA",
+      "lat": -31.5,
+      "nature": "SS",
+      "nearest_km": 252.29446800478541,
+      "catalogue_radius_km": 21.990430704825517,
+      "tolerance_km": 23.464733785965542,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 228.82973421881988,
+      "refusal": null
+    },
+    {
+      "storm": "LINDA",
+      "lat": -23.8,
+      "nature": "TS",
+      "nearest_km": 74.91176731935917,
+      "catalogue_radius_km": 0.0,
+      "tolerance_km": null,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": null,
+      "unexplained_residual_km": null,
+      "refusal": "the catalogue reports no usable position uncertainty for this observation (the field is 0.0). A zero is a missing report written down as a number, and using it would demand a separation of exactly zero, which no measurement can supply; a non-finite one is a bar that admits everything, which is worse than no bar at all. Refused by name and excluded from the denominator rather than defaulted"
+    },
+    {
+      "storm": "IRIS",
+      "lat": -22.7,
+      "nature": "TS",
+      "nearest_km": 152.6889992476016,
+      "catalogue_radius_km": 15.131080193454286,
+      "tolerance_km": 17.203612320766954,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 135.48538692683465,
+      "refusal": null
+    },
+    {
+      "storm": "JOSIE",
+      "lat": -21.5,
+      "nature": "TS",
+      "nearest_km": 189.64774835400485,
+      "catalogue_radius_km": 145.23376827050723,
+      "tolerance_km": 145.46429848974591,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 44.18344986425893,
+      "refusal": null
+    },
+    {
+      "storm": "OWEN",
+      "lat": -20.8,
+      "nature": "MX",
+      "nearest_km": 99.97785176638213,
+      "catalogue_radius_km": 11.119492664455889,
+      "tolerance_km": 13.807889273070968,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 86.16996249331116,
+      "refusal": null
+    },
+    {
+      "storm": "PENNY",
+      "lat": -20.0,
+      "nature": "TS",
+      "nearest_km": 51.19801875171209,
+      "catalogue_radius_km": 11.119492664455889,
+      "tolerance_km": 13.807889273070968,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 37.39012947864112,
+      "refusal": null
+    },
+    {
+      "storm": "OMA",
+      "lat": -28.2,
+      "nature": "MX",
+      "nearest_km": 162.2379765829923,
+      "catalogue_radius_km": 14.824505797651028,
+      "tolerance_km": 16.934599528984702,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 145.3033770540076,
+      "refusal": null
+    },
+    {
+      "storm": "SARAI",
+      "lat": -20.3,
+      "nature": "TS",
+      "nearest_km": 2055.9115466999688,
+      "catalogue_radius_km": 24.565694643341786,
+      "tolerance_km": 25.8937838558294,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 2030.0177628441393,
+      "refusal": null
+    },
+    {
+      "storm": "UESI",
+      "lat": -37.5,
+      "nature": "SS",
+      "nearest_km": 60.811392357624555,
+      "catalogue_radius_km": 103.47459429659405,
+      "tolerance_km": 103.79791112497031,
+      "inside_original_radius": true,
+      "inside_restated_tolerance": true,
+      "unexplained_residual_km": -42.98651876734576,
+      "refusal": null
+    },
+    {
+      "storm": "GRETEL",
+      "lat": -31.2,
+      "nature": "SS",
+      "nearest_km": 127.09969605529943,
+      "catalogue_radius_km": 106.8519982461921,
+      "tolerance_km": 107.16512594247598,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 19.93457011282345,
+      "refusal": null
+    },
+    {
+      "storm": "ANA",
+      "lat": -22.3,
+      "nature": "TS",
+      "nearest_km": 1581.2039642426605,
+      "catalogue_radius_km": 34.91209656007172,
+      "tolerance_km": 35.85901804682152,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 1545.344946195839,
+      "refusal": null
+    },
+    {
+      "storm": "LUCAS",
+      "lat": -22.7,
+      "nature": "MX",
+      "nearest_km": 29.927728013775287,
+      "catalogue_radius_km": 61.54889122773754,
+      "tolerance_km": 62.09090674508118,
+      "inside_original_radius": true,
+      "inside_restated_tolerance": true,
+      "unexplained_residual_km": -32.16317873130589,
+      "refusal": null
+    },
+    {
+      "storm": "NIRAN",
+      "lat": -28.4,
+      "nature": "SS",
+      "nearest_km": 1241.0443219837443,
+      "catalogue_radius_km": 112.30722832900854,
+      "tolerance_km": 112.60518737609986,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 1128.4391346076445,
+      "refusal": null
+    },
+    {
+      "storm": "UNNAMED",
+      "lat": -30.1,
+      "nature": "ET",
+      "nearest_km": 159.44686734959345,
+      "catalogue_radius_km": 22.23898532891107,
+      "tolerance_km": 23.697830228145822,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 135.74903712144763,
+      "refusal": null
+    },
+    {
+      "storm": "RUBY",
+      "lat": -30.7,
+      "nature": "SS",
+      "nearest_km": 106.99854491228876,
+      "catalogue_radius_km": 11.119492664455182,
+      "tolerance_km": 13.807889273070398,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 93.19065563921836,
+      "refusal": null
+    },
+    {
+      "storm": "SETH",
+      "lat": -21.0,
+      "nature": "TS",
+      "nearest_km": 111.72053018976614,
+      "catalogue_radius_km": 10.380940534899715,
+      "tolerance_km": 13.220386357880164,
+      "inside_original_radius": false,
+      "inside_restated_tolerance": false,
+      "unexplained_residual_km": 98.50014383188598,
+      "refusal": null
+    }
+  ],
+  "acceptance_curve": [
+    {
+      "tolerance_km": 5.0,
+      "admitted": 0,
+      "judged": 17,
+      "rate": 0.0
+    },
+    {
+      "tolerance_km": 10.0,
+      "admitted": 0,
+      "judged": 17,
+      "rate": 0.0
+    },
+    {
+      "tolerance_km": 15.0,
+      "admitted": 0,
+      "judged": 17,
+      "rate": 0.0
+    },
+    {
+      "tolerance_km": 20.0,
+      "admitted": 0,
+      "judged": 17,
+      "rate": 0.0
+    },
+    {
+      "tolerance_km": 25.0,
+      "admitted": 0,
+      "judged": 17,
+      "rate": 0.0
+    },
+    {
+      "tolerance_km": 30.0,
+      "admitted": 1,
+      "judged": 17,
+      "rate": 0.058823529411764705
+    },
+    {
+      "tolerance_km": 35.0,
+      "admitted": 1,
+      "judged": 17,
+      "rate": 0.058823529411764705
+    },
+    {
+      "tolerance_km": 40.0,
+      "admitted": 1,
+      "judged": 17,
+      "rate": 0.058823529411764705
+    },
+    {
+      "tolerance_km": 50.0,
+      "admitted": 1,
+      "judged": 17,
+      "rate": 0.058823529411764705
+    },
+    {
+      "tolerance_km": 65.0,
+      "admitted": 3,
+      "judged": 17,
+      "rate": 0.17647058823529413
+    },
+    {
+      "tolerance_km": 80.0,
+      "admitted": 4,
+      "judged": 17,
+      "rate": 0.23529411764705882
+    },
+    {
+      "tolerance_km": 100.0,
+      "admitted": 5,
+      "judged": 17,
+      "rate": 0.29411764705882354
+    },
+    {
+      "tolerance_km": 125.0,
+      "admitted": 8,
+      "judged": 17,
+      "rate": 0.47058823529411764
+    },
+    {
+      "tolerance_km": 150.0,
+      "admitted": 9,
+      "judged": 17,
+      "rate": 0.5294117647058824
+    },
+    {
+      "tolerance_km": 200.0,
+      "admitted": 13,
+      "judged": 17,
+      "rate": 0.7647058823529411
+    },
+    {
+      "tolerance_km": 300.0,
+      "admitted": 14,
+      "judged": 17,
+      "rate": 0.8235294117647058
+    },
+    {
+      "tolerance_km": 500.0,
+      "admitted": 14,
+      "judged": 17,
+      "rate": 0.8235294117647058
+    }
+  ],
+  "the_curve_is_for_inspection_not_selection": "The declared bar decides the verdict. Choosing a point from this curve after seeing it would be the horse race R20 forbids. It is reported so the bar can be argued with specifically rather than merely accepted or rejected.",
+  "PREDICTION": "The restated acceptance STILL FAILS, improving on 2 of 18 but not reaching 9.",
+  "VERDICT": "PREDICTION_HELD_ON_FAILURE_BUT_NO_IMPROVEMENT",
+  "claim_boundary": "This restates a bar and re-runs one acceptance measurement against an unchanged population with unchanged conditions. An acceptance measurement settles what an instrument does, not what the atmosphere does. It approves no mining radius, adopts no tolerance into any pipeline, discharges no part of T4E.8's acquired-record acceptance, and settles nothing about whether the record supports kind_recurrence. It does not supersede measurements/t4e18_acceptance.json, which stands as measured.",
+  "elapsed_seconds": 0.001,
+  "source_revision": "546097537d1e89a41af736945f042e1b776df8bf",
+  "source_code_dirty": true,
+  "CONDITION_2_LIFTED_2026_09_11_BY_T4E_28": {
+    "what_this_settles": "T4E.27 refused condition 2 by name because the committed receipt carried each storm's NEAREST distance and no more, so the count at any other bar was unrecoverable. T4E.28 records the full sorted distance list from every catalogue centre to every extracted feature, on both paths, so the count at any bar is now arithmetic. THE REFUSAL IS LIFTED.",
+    "condition_2_three_features_inside_the_restated_tolerance": {
+      "swt_planes": {
+        "met": 1,
+        "judged": 17,
+        "needed": 9
+      },
+      "raw_field": {
+        "met": 0,
+        "judged": 17,
+        "needed": 9
+      },
+      "refused": [
+        "LINDA"
+      ]
+    },
+    "the_verdict_does_not_move": "FAILED, and now failed on both conditions rather than on one with the other refused. A lifted refusal that changed a verdict would be worth more attention than one that does not; this one does not, and saying so is the whole of it.",
+    "measured_on_both_paths_because_T4E_27_used_only_one": "T4E.27's correction records that it restated the bar against the SWT rows because those were the only rows in the record. Both are reported here so that the choice is visible rather than inherited.",
+    "per_storm": [
+      {
+        "storm": "FEHI",
+        "tolerance_km": 12.09508285652532,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "GITA",
+        "tolerance_km": 89.75816978022152,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "HOLA",
+        "tolerance_km": 23.464733785965542,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "LINDA",
+        "tolerance_km": null,
+        "refused": true
+      },
+      {
+        "storm": "IRIS",
+        "tolerance_km": 17.203612320766954,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "JOSIE",
+        "tolerance_km": 145.46429848974591,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "OWEN",
+        "tolerance_km": 13.807889273070968,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "PENNY",
+        "tolerance_km": 13.807889273070968,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "OMA",
+        "tolerance_km": 16.934599528984702,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "SARAI",
+        "tolerance_km": 25.8937838558294,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "UESI",
+        "tolerance_km": 103.79791112497031,
+        "features_inside_tolerance_swt": 2,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "GRETEL",
+        "tolerance_km": 107.16512594247598,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "ANA",
+        "tolerance_km": 35.85901804682152,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "LUCAS",
+        "tolerance_km": 62.09090674508118,
+        "features_inside_tolerance_swt": 3,
+        "features_inside_tolerance_raw": 1
+      },
+      {
+        "storm": "NIRAN",
+        "tolerance_km": 112.60518737609986,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "UNNAMED",
+        "tolerance_km": 23.697830228145822,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "RUBY",
+        "tolerance_km": 13.807889273070398,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      },
+      {
+        "storm": "SETH",
+        "tolerance_km": 13.220386357880164,
+        "features_inside_tolerance_swt": 0,
+        "features_inside_tolerance_raw": 0
+      }
+    ],
+    "source": "measurements/t4e28_join_rerun.json",
+    "recorded_on": "2026-09-11"
+  }
+}

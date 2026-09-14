@@ -1,0 +1,181 @@
+{
+  "candidate": "D_mutual_nearest_neighbour_with_a_dimensionless_margin",
+  "criterion": "mutual_nearest_neighbour_with_ratio_margin",
+  "tau": 0.8,
+  "planted_blocks": [
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "scene_pairs": 15,
+      "scene_pairs_refused_for_undefined_margin": 0,
+      "matches_returned": 70,
+      "matches_returned_by_candidate_C": 121,
+      "retention_of_candidate_C": 0.5785123966942148,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.7857142857142857,
+      "margin_ratio_diagnostic": {
+        "is_a_diagnostic_not_a_criterion": "Recorded to say whether the distributions overlap. A tau read off it is fitted to already-inspected blocks and may not be reported as an operating point.",
+        "motif_pairs": 15,
+        "motif_ratio_range": [
+          0.019983777243134496,
+          0.29311791352259187
+        ],
+        "other_pairs": 106,
+        "other_ratio_range": [
+          0.09271560817719085,
+          0.9996955864663803
+        ]
+      }
+    },
+    {
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "scene_pairs": 15,
+      "scene_pairs_refused_for_undefined_margin": 0,
+      "matches_returned": 67,
+      "matches_returned_by_candidate_C": 121,
+      "retention_of_candidate_C": 0.5537190082644629,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.7761194029850746,
+      "margin_ratio_diagnostic": {
+        "is_a_diagnostic_not_a_criterion": "Recorded to say whether the distributions overlap. A tau read off it is fitted to already-inspected blocks and may not be reported as an operating point.",
+        "motif_pairs": 15,
+        "motif_ratio_range": [
+          0.06346072563059822,
+          0.18281386840899203
+        ],
+        "other_pairs": 106,
+        "other_ratio_range": [
+          0.24754362141540268,
+          0.9976443287579583
+        ]
+      }
+    },
+    {
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      "scene_pairs": 15,
+      "scene_pairs_refused_for_undefined_margin": 0,
+      "matches_returned": 86,
+      "matches_returned_by_candidate_C": 152,
+      "retention_of_candidate_C": 0.5657894736842105,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.8255813953488372,
+      "margin_ratio_diagnostic": {
+        "is_a_diagnostic_not_a_criterion": "Recorded to say whether the distributions overlap. A tau read off it is fitted to already-inspected blocks and may not be reported as an operating point.",
+        "motif_pairs": 15,
+        "motif_ratio_range": [
+          0.02653539814902583,
+          0.2070923206776378
+        ],
+        "other_pairs": 137,
+        "other_ratio_range": [
+          0.10606750420721074,
+          0.9900879504166402
+        ]
+      }
+    },
+    {
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ],
+      "scene_pairs": 15,
+      "scene_pairs_refused_for_undefined_margin": 0,
+      "matches_returned": 81,
+      "matches_returned_by_candidate_C": 136,
+      "retention_of_candidate_C": 0.5955882352941176,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.8148148148148148,
+      "margin_ratio_diagnostic": {
+        "is_a_diagnostic_not_a_criterion": "Recorded to say whether the distributions overlap. A tau read off it is fitted to already-inspected blocks and may not be reported as an operating point.",
+        "motif_pairs": 15,
+        "motif_ratio_range": [
+          0.029678751009562476,
+          0.16510847319542798
+        ],
+        "other_pairs": 121,
+        "other_ratio_range": [
+          0.1803331588746051,
+          0.9996587777268382
+        ]
+      }
+    }
+  ],
+  "null_blocks": [
+    {
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "scene_pairs": 15,
+      "scene_pairs_refused_for_undefined_margin": 0,
+      "matches_returned": 62,
+      "matches_returned_by_candidate_C": 116,
+      "retention_of_candidate_C": 0.5344827586206896,
+      "motif_pairs": 0,
+      "motif_pairs_matched": 0,
+      "false_split_rate": null,
+      "false_admission_rate": 1.0,
+      "margin_ratio_diagnostic": {
+        "is_a_diagnostic_not_a_criterion": "Recorded to say whether the distributions overlap. A tau read off it is fitted to already-inspected blocks and may not be reported as an operating point.",
+        "motif_pairs": 0,
+        "motif_ratio_range": null,
+        "other_pairs": 116,
+        "other_ratio_range": [
+          0.24000329750146965,
+          0.9963031678486337
+        ]
+      }
+    }
+  ],
+  "false_split_range": [
+    0.0,
+    0.0
+  ],
+  "false_admission_range": [
+    0.7761194029850746,
+    0.8255813953488372
+  ],
+  "null_retention_range": [
+    0.5344827586206896,
+    0.5344827586206896
+  ],
+  "acceptance_boundary": "False split at most 0.10 on every block, null retention at most 0.10, and both materially stable between blocks. A good average across unstable blocks is a fail.",
+  "evidence_class": "development",
+  "boundary": "Measured on the blocks that informed the declaration. Development evidence only; the reserved confirmatory blocks are untouched."
+}

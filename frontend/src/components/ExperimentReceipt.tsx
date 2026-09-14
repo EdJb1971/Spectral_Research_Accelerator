@@ -79,7 +79,7 @@ export function ExperimentReceiptPanel({ runId, runState, trustOnly = false,
       <h3 id={trustOnly ? 'receipt-trust-title' : 'receipt-export-title'}
           className="font-semibold text-slate-100 flex items-center gap-2">
         <FileCheck2 className="w-4 h-4 text-teal-400" aria-hidden="true" />
-        {trustOnly ? 'G17 experiment lineage and receipts' : 'Immutable receipt and evidence handoff'}
+        {trustOnly ? 'Experiment lineage and receipts' : 'Immutable receipt and evidence handoff'}
       </h3>
       <p className="text-xs text-slate-500 mt-1">{capabilities.claim_boundary}</p>
     </div>

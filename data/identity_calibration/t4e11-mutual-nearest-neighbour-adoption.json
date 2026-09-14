@@ -1,0 +1,36 @@
+{
+  "schema": "t4e11-adoption/v1",
+  "adopts": "data/identity_calibration/t4e11-mutual-nearest-neighbour-declaration.json",
+  "adopts_sha256": "6b7105cc921efde0d58b2cce9dc13feeffeb20f2397d27317e9a615b5d1392e3",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-09",
+  "adoption_followed_external_review": "The maintainer sought external review before adopting. Two corrections were made to the declaration first and are recorded in its own pre_adoption_corrections field: the one-to-one assumption was restated at the instance level, because the earlier wording misdescribed the criterion as permitting one match per scene pair when mutual nearest-neighbour returns a one-to-one partial matching that can hold many; and the scope was made explicit as a domain-agnostic mechanism carrying atmospheric evidence only. The superseded draft was never adopted and nothing was measured under it; its hash was 836812a0eae8e053aafeb7485de838ec464ad8ad55ff1d4af058ff57c162f3ae.",
+  "what_was_adopted": "The preregistration is in force. Candidate C -- mutual nearest-neighbour matching per ordered scene pair, with no radius, threshold or normaliser -- is the declared next attempt at an identity criterion that survives a change of partition.",
+  "what_adoption_does_not_mean": "It is not a prediction that C will work. It says only that C is a scientifically defensible candidate worth measuring and that the conditions for calling it a success or a failure are fixed in advance. If it fails it is to be recorded as failed.",
+  "what_was_not_adopted": "C is NOT adopted as the identity criterion. Adoption authorises the development evaluation on the four already-inspected blocks and the null block, and nothing further. The reserved confirmatory blocks stay reserved until development evidence supports proceeding and a further amendment records that.",
+  "scope_adopted": "Atmospheric identity path only. Adopting C here adopts it nowhere else. Cross-domain use of the same mechanism requires its own declared experiment under the cross-domain programme and its own qualification, per R19.",
+  "governing": [
+    "R20: candidate C is evaluated alone. It is not compared against B to pick a winner; B is already falsified and its result stands on its own.",
+    "Development results on the four inspected blocks are development evidence and may not be reported as confirmation."
+  ],
+  "development_outcome": {
+    "status": "FALSIFIED_ON_DEVELOPMENT_EVIDENCE",
+    "measured_on": "2026-09-09",
+    "false_split_range_across_four_blocks": [
+      0.0,
+      0.0
+    ],
+    "false_admission_range_across_four_blocks": [
+      0.876,
+      0.9013
+    ],
+    "null_block_false_admission_rate": 1.0,
+    "null_block_matches_returned": 116,
+    "summary": "The criterion recovers every construction-labelled motif pair in every block -- split 0.0000 four times over, despite the blocks differing 1.876x in distance magnitude -- and returns roughly 120 to 150 matches per block where only 15 are motifs. On the null block, where nothing recurs, it returns 116 matches and every one is false by construction.",
+    "what_this_establishes": "That the ORDERING transfers where magnitudes do not. This is the property a frozen radius (T4E.10) and a normalised one (candidate B) both lacked, and candidate C has it completely: the motif is the mutual nearest neighbour in every scene pair of every block. The recall half of the identity question is answered and it is stable.",
+    "why_it_is_nonetheless_falsified": "Mutual nearest-neighbour always returns a match. It has no way to say that nothing here corresponds, so it matches whatever happens to be mutually nearest whether or not anything recurs. That is exactly the failure this declaration named in advance, and the null block measures it at 100%.",
+    "correction_to_this_declaration": "The declaration stated that if C failed, the honest reading would be that the question is not answerable by a criterion of this shape on this signature, and that the next move would be the signature rather than a fourth criterion. THAT DOES NOT FOLLOW from this result. The shape is not what failed: the ordering transferred perfectly and stably. What failed is that the rule is incomplete -- it has no rejection test. A rejection test can itself be rank-based and scale-free, for instance comparing the nearest distance to the second-nearest within the same scene pair, which would keep everything C was adopted for while supplying what it lacks. Whether to try that is a fresh scientific choice.",
+    "what_this_does_not_authorise": "Adding a rejection test to C and re-measuring. That is candidate D and needs its own declaration and adoption under R20. The reserved confirmatory blocks remain reserved; neither candidate B's failure nor this one unreserves them.",
+    "a_pattern_worth_recording": "This is the second consecutive declaration whose stated falsification reasoning was wrong in the same way. Candidate B predicted that failure would show the shape moving rather than the scale, and it did not; candidate C predicted that failure would implicate the signature, and it does not. Both times the pre-registered diagnosis was more sweeping than the measurement supported. The declarations were still worth making -- the acceptance conditions were right both times and the results are unambiguous -- but the 'what would falsify this' field has a track record of over-reaching and should be read as a hypothesis about the failure rather than as a conclusion licensed in advance."
+  }
+}

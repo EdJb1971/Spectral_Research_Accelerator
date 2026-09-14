@@ -1,0 +1,66 @@
+{
+  "schema": "round-robin/v1",
+  "study_id": "t4e28-join-rerun",
+  "bundle_sha256": "b1e809d69a71db35b8b409946bbc5a07ca1d627dc3b89e70621ea5c9c5c630b2",
+  "bundle_revision": 7,
+  "panel": {
+    "schema": "review-panel/v1",
+    "seats": [
+      {
+        "role": "candidate_synthesis",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "statistical_challenge",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "confounder_challenge",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "domain_plausibility_challenge",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "provenance_challenge",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "response_and_revision",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "independent_reassessment",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      },
+      {
+        "role": "final_synthesis",
+        "model_id": "gemini-3.5-flash",
+        "effort": "high"
+      }
+    ],
+    "panel_sha256": "9fcef0303428f756b107829234bb8f30164633b1d2eeba2244b6ca000d085f88"
+  },
+  "record_sha256": "e285e1176ff1f494d870e6473909053103055e22f8ef7c0c4937f3ccb1d4c007",
+  "finding": "Measurements were recorded for the dataset, but they fail to satisfy the required thresholds for a valid observation, and the underlying study's published spatial range is incorrect.",
+  "bounded_by": [
+    "nothing_measured",
+    "no_estimated_effect",
+    "confounding",
+    "reverse_or_simultaneous_order",
+    "in_sample_optimism",
+    "entry:4"
+  ],
+  "retained_dissent": [],
+  "claim_sha256": "699e67f643ebeb075afbed8cf922840c541b291bdfaab08f2bee2f5c30d48158",
+  "rung": "observation",
+  "outcome_sha256": "b0b42cda85b7c818bbdf4324f2415ef93a2d7748e1388736369e5ed53fce9026"
+}

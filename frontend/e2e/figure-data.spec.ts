@@ -28,7 +28,7 @@ async function openWorkspace(page: Page, name: string) {
 /** Generate the deterministic analytical field the gridded panels operate on. */
 async function generateField(page: Page) {
   await page.goto('/');
-  await openWorkspace(page, 'Synthetic generator');
+  await openWorkspace(page, 'Synthetic data');
   await page.getByRole('button', { name: 'Generate Analytical Field' }).click();
   await expect(page.locator('#fig-clean-field.js-plotly-plot')).toBeVisible({ timeout: 30_000 });
 }
@@ -124,7 +124,7 @@ test.describe('the heat map equivalent', () => {
 test.describe('the line chart equivalent', () => {
   test.beforeEach(async ({ page }) => {
     await generateField(page);
-    await openWorkspace(page, 'Boundary-condition lab');
+    await openWorkspace(page, 'Boundary conditions');
     await page.getByRole('button', { name: 'Apply & Analyze Artefacts' }).click();
     // By role: the figure heading and the new table caption both carry this text, and a bare
     // text match would be ambiguous the moment the equivalent exists.

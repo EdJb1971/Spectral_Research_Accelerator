@@ -55,6 +55,10 @@ CHALLENGE_ROLES = (
     "provenance_challenge",
 )
 
+# One candidate, four challenges, at most one response to each challenge, one independent
+# reassessment and one final synthesis. The response role is a seat, not a one-use turn.
+MAX_ROUND_ROBIN_CALLS = 3 + 2 * len(CHALLENGE_ROLES)
+
 VERDICTS = ("supported", "unsupported", "unclear")
 
 #: What the candidate may say about a dissent.  Only `conceded` retires one on its own; a
@@ -142,8 +146,8 @@ RUBRICS: Mapping[str, str] = MappingProxyType({
         "cannot support is worse than either. " + R22_RUBRIC,
     "independent_reassessment":
         "Read the exchange as someone who wrote none of it. Say which dissents you consider "
-        "still standing despite the response given. You may reopen a dissent; you cannot "
-        "originate one at this turn. " + R22_RUBRIC,
+        "still standing despite the response given. You may reopen a rebutted dissent; a "
+        "concession is final, and you cannot originate a dissent at this turn. " + R22_RUBRIC,
     "final_synthesis":
         "State the finding within its bounds, and carry every unresolved dissent by name. You "
         "are not counting votes and you are not producing agreement: a dissent nobody answered "
@@ -400,6 +404,13 @@ def _answered(calls: Tuple[Any, ...]) -> Tuple[str, ...]:
                  if call.request.role == "response_and_revision")
 
 
+def _rebutted(calls: Tuple[Any, ...]) -> Tuple[str, ...]:
+    """The dissents a reassessment may reopen after the candidate answered them."""
+    return tuple(_answer(call)["answers_challenge"] for call in calls
+                 if call.request.role == "response_and_revision"
+                 and _answer(call)["outcome"] == "rebutted")
+
+
 def _spoken(calls: Tuple[Any, ...], role: str) -> bool:
     return any(call.request.role == role for call in calls)
 
@@ -536,18 +547,18 @@ def _check_turn(turn: Turn, call: Any, panel: ReviewPanel, before: Tuple[Any, ..
                 "%r, the oldest dissent still unanswered. Dissents are answered in the order "
                 "they were raised" % turn.target)
     elif turn.role == "independent_reassessment":
-        raised = _dissents_raised(before)
+        rebutted = _rebutted(before)
         seen = _strings("response.standing_dissent", answer["standing_dissent"])
         if len(set(seen)) != len(seen):
             raise InvalidParameterError("response.standing_dissent", list(seen),
                                         "each standing dissent named once")
-        stray = tuple(name for name in seen if name not in raised)
+        stray = tuple(name for name in seen if name not in rebutted)
         if stray:
             raise InvalidParameterError(
                 "response.standing_dissent", list(stray),
-                "only challenges actually raised (%s). The reassessment may reopen a dissent; "
-                "it cannot originate one at this turn, because nothing would answer it"
-                % (", ".join(raised) if raised else "none were"))
+                "only rebutted dissents (%s). A concession is final, an unresolved response "
+                "already remains open, and the reassessment cannot originate a dissent"
+                % (", ".join(rebutted) if rebutted else "none"))
     elif turn.role == "final_synthesis":
         open_now = tuple(item.challenger for item in _register(before)
                          if item.state == "unresolved")
@@ -645,6 +656,8 @@ def _context(reviewed: ReviewedBundle, turn: Turn) -> Dict[str, Any]:
         "transcript": [{"turn": call.sequence, "role": call.request.role,
                         "answer": _answer(call)} for call in reviewed.review.calls],
         "answering": turn.target,
+        "formal_dissent_raised": list(_dissents_raised(reviewed.review.calls)),
+        "rebutted_dissent_eligible_for_reopening": list(_rebutted(reviewed.review.calls)),
     }
 
 
@@ -655,6 +668,11 @@ def _instruction(turn: Turn) -> str:
     if turn.role == "final_synthesis":
         return ("Turn %d. State the finding within its bounds and name every dissent left "
                 "unresolved by the exchange above." % turn.index)
+    if turn.role == "independent_reassessment":
+        return ("Turn %d. Reassess against the bundle. `standing_dissent` may contain only the "
+            "role identifiers listed in context.rebutted_dissent_eligible_for_reopening. "
+            "Conceded dissents are closed; unresolved responses already remain open. If "
+            "that list is empty, return an empty standing_dissent list." % turn.index)
     return "Turn %d. Speak in the seat of %s over the evidence shown." % (turn.index, turn.role)
 
 
@@ -815,7 +833,7 @@ def close_round_robin(exchange: RoundRobin) -> RoundRobinOutcome:
 
 __all__ = [
     "ROUND_ROBIN_SCHEMA", "PANEL_SCHEMA", "CHALLENGE_ROLES", "VERDICTS", "RESPONSE_OUTCOMES",
-    "DISSENT_STATES", "CLOSURES", "R22_RUBRIC", "RUBRICS", "SCHEMA_FOR_ROLE",
+    "DISSENT_STATES", "CLOSURES", "MAX_ROUND_ROBIN_CALLS", "R22_RUBRIC", "RUBRICS", "SCHEMA_FOR_ROLE",
     "CANDIDATE_SCHEMA", "CHALLENGE_SCHEMA", "RESPONSE_SCHEMA", "REASSESSMENT_SCHEMA",
     "FINAL_SCHEMA", "RecordedTurnRefused", "PanelSeat", "ReviewPanel", "Turn", "Dissent",
     "RoundRobin", "RoundRobinOutcome", "open_round_robin", "advance", "close_round_robin",

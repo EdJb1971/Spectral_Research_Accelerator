@@ -121,7 +121,7 @@ function workflowNav(page: Page): Locator {
 
 async function generateField(page: Page) {
   await page.goto('/');
-  await workflowNav(page).getByRole('button', { name: /^Synthetic generator/ }).click();
+  await workflowNav(page).getByRole('button', { name: /^Synthetic data/ }).click();
   await page.getByRole('button', { name: 'Generate Analytical Field' }).click();
   await expect(page.locator('#fig-clean-field.js-plotly-plot')).toBeVisible({ timeout: 30_000 });
 }
@@ -193,7 +193,7 @@ test.describe('the decision reaching the figures', () => {
 
   test('a pair of differing shapes keeps its shared scale but refuses linked addressing', async ({ page }) => {
     await generateField(page);
-    await workflowNav(page).getByRole('button', { name: /^Boundary-condition lab/ }).click();
+    await workflowNav(page).getByRole('button', { name: /^Boundary conditions/ }).click();
     await page.getByRole('button', { name: 'Apply & Analyze Artefacts' }).click();
     await expect(page.getByRole('heading',
       { name: 'Artefact Gradients & Error Profiles by Boundary Distance' }))

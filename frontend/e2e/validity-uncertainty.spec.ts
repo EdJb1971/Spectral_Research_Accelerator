@@ -223,7 +223,7 @@ function workflowNav(page: Page): Locator {
 
 async function runDiagnostics(page: Page) {
   await page.goto('/');
-  await workflowNav(page).getByRole('button', { name: /^Synthetic generator/ }).click();
+  await workflowNav(page).getByRole('button', { name: /^Synthetic data/ }).click();
   await page.getByRole('button', { name: 'Generate Analytical Field' }).click();
   await expect(page.locator('#fig-clean-field.js-plotly-plot')).toBeVisible({ timeout: 30_000 });
   await workflowNav(page).getByRole('button', { name: /^Diagnostics/ }).click();

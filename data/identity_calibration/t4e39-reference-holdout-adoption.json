@@ -1,0 +1,13 @@
+{
+  "schema": "maintainer-adoption/v1",
+  "adopts": "data/identity_calibration/t4e39-reference-holdout-declaration.json",
+  "adopts_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+  "adopted_by": "Ed Bentley",
+  "adopted_on": "2026-09-13",
+  "adopted_as": "ADOPTED_FOR_GUARDED_HOLDOUT_CENSUS",
+  "what_was_adopted": "the exact T4E.39 pre-opening temporal reference holdout declaration, including its frozen population, minimum size, strict-majority rule, staged catalogue/ERA5 boundary and NOT_AN_ACCEPTANCE claim boundary",
+  "affirmation": "I have read this declaration and I adopt it",
+  "signed_through": "the adoption surface, by a person who typed the affirmation above. Code does not sign a scientific declaration for anyone; this record exists because a named maintainer performed the act, and the surface refuses to supply any part of it.",
+  "what_this_adoption_does_not_do": "It does not make the declaration correct, does not permit any claim, and does not adopt any amendment made after the digest above. A declaration edited after this adoption is a different declaration and this signature does not reach it.",
+  "why_the_maintainer_adopted_it": "To permit the guarded catalogue-only census while preserving the separate network authorization and unopened ERA5 holdout boundary."
+}

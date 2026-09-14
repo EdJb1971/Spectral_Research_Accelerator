@@ -1,0 +1,39 @@
+{
+  "schema": "correspondence-record-profile/v3",
+  "source": {
+    "filename": "tic-234994474.csv",
+    "content_sha256": "b4cf9ac89e6844c978e115b40de69a7a5e84d8e785901378a891ee0b2831393e",
+    "format": "delimited_text",
+    "time_column": "elapsed_seconds",
+    "value_column": "pdcsap_flux",
+    "time_units": "seconds",
+    "window_seconds": 2408886.4575505257
+  },
+  "derivation": {
+    "n_samples": "finite declared time/value rows",
+    "cadence_seconds": "median positive adjacent time difference",
+    "coverage_fraction": "min(1, (n_samples - 1) * cadence / declared_window)",
+    "native_seconds": "NASA Exoplanet Archive TOI pl_orbper converted from days to seconds; not estimated from SPOC flux",
+    "effective_sample_size": "quality-zero finite PDCSAP flux; clipped AR(1) n * (1-rho1) / (1+rho1)",
+    "noise_floor": "median(PDCSAP_FLUX_ERR) / (1.4826 * MAD(PDCSAP_FLUX)) on quality-zero finite rows"
+  },
+  "method_review": {
+    "schema": "g17-marginal-method-review/v1",
+    "declaration_file": "g17_tess_marginal_method_review.json",
+    "declaration_sha256": "3c963f41bc35503813c3a0ed61707ba83e73bb6d3abfdb5b08a1341375085cff",
+    "adoption_file": "g17_tess_marginal_method_review-adoption.json",
+    "adoption_sha256": "e8af684504ee000040ddfa5a1af9fe0fa73bdbadd90e1043fcf26bf29cf21a9f",
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-12"
+  },
+  "profile": {
+    "record_id": "tic-234994474",
+    "provenance_key": "MAST-TESS-SPOC/TIC-234994474/FITS-ddf7595e991b0b836bb49f86914df8c0b29d0d57fd90bf8f375fb8a95f9de733",
+    "n_samples": 18276,
+    "effective_sample_size": 14501.087723902308,
+    "native_seconds": 121091.18112,
+    "cadence_seconds": 120.00059634447098,
+    "coverage_fraction": 0.9103836718087446,
+    "noise_floor": 0.9557668600185122
+  }
+}

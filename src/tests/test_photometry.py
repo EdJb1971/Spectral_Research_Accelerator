@@ -16,11 +16,17 @@ from fastapi.testclient import TestClient
 from extensions.tess_lightcurve import TESS, register as register_tess_domain
 from src.api.main import app
 from src.core.domain import DOMAIN_DECLARATIONS, PrecedenceNotAdmissibleError
-from src.core.errors import InvalidParameterError
+from src.core.errors import InvalidParameterError, UserInputError
+from src.core.tess_pool_assessment import (assess_tess_pool_acquisition,
+                                           merge_tess_acquisitions,
+                                           qualify_tess_acquisition)
+from src.core.tess_profile_export import export_tess_partner_profiles
 from src.data_layer.lightcurves import (LIGHTCURVE_SOURCES, LightCurveCollection,
                                         LightCurveProduct, LightCurveSpec, load_collection,
                                         persist_collection)
-from src.data_layer.tess_source import (acquire_tess, inspect_tess_query,
+from src.data_layer.tess_source import (acquire_discovered_tess, acquire_tess,
+                                        discover_periodic_tess_products, discover_tess_targets,
+                                        inspect_tess_query, parse_spoc_fits,
                                         register_tess_source)
 
 TIC = "261136679"
@@ -34,10 +40,10 @@ def spec(**changes) -> LightCurveSpec:
     return LightCurveSpec(**values)
 
 
-def fits_bytes(flux_offset: float = 0.0, times=None, quality=None) -> bytes:
+def fits_bytes(flux_offset: float = 0.0, times=None, quality=None, tic_id: str = TIC) -> bytes:
     """A SPOC-shaped product. `times` may carry NaN, as every real one does."""
     primary = fits.PrimaryHDU()
-    primary.header["TICID"] = int(TIC)
+    primary.header["TICID"] = int(tic_id)
     primary.header["RA_OBJ"] = RA
     primary.header["DEC_OBJ"] = DEC
     time_array = np.array([1.0, 1.01, 1.03] if times is None else times, dtype=np.float64)
@@ -120,6 +126,348 @@ def test_metadata_preflight_names_exact_products_without_downloading_values():
     assert plan["products"][0]["filename"].endswith("s_lc.fits")
 
 
+def test_sector_discovery_selects_exact_tic_products_without_downloading_values():
+    calls = []
+
+    def query(request):
+        calls.append(request["service"])
+        if request["service"] == "Mast.Caom.Filtered":
+            return {"status": "COMPLETE", "data": [
+                {"obsid": "3", "obs_id": "tess-s0001-0000000000000003",
+                 "target_name": "TIC 3", "sequence_number": 1,
+                 "provenance_name": "SPOC"},
+                {"obsid": "1", "obs_id": "tess-s0001-0000000000000001",
+                 "target_name": "TIC 1", "sequence_number": 1,
+                 "provenance_name": "SPOC"},
+                {"obsid": "2", "obs_id": "tess-s0001-0000000000000002",
+                 "target_name": "TIC 2", "sequence_number": 1,
+                 "provenance_name": "SPOC"},
+            ]}
+        obsid = str(request["params"]["obsid"])
+        filename = "tess-s0001-%s-0001-s_lc.fits" % obsid.zfill(16)
+        return {"status": "COMPLETE", "data": [{
+            "obs_id": "tess-s0001-%s" % obsid,
+            "productType": "SCIENCE", "productSubGroupDescription": "LC",
+            "productFilename": filename, "dataURI": "mast:TESS/product/" + filename,
+            "size": 1000 + int(obsid),
+        }]}
+
+    result = discover_tess_targets(sector=1, target_limit=2, query=query)
+
+    assert result["metadata_only"] is True
+    assert [row["tic_id"] for row in result["targets"]] == ["1", "2"]
+    assert result["selected_targets"] == 2
+    assert result["predicted_download_bytes"] == 2003
+    assert calls == ["Mast.Caom.Filtered", "Mast.Caom.Products", "Mast.Caom.Products"]
+    assert "exchangeability" in result["claim_boundary"]
+
+
+def test_sector_discovery_is_bounded_and_reports_productless_candidates():
+    def query(request):
+        if request["service"] == "Mast.Caom.Filtered":
+            return {"status": "COMPLETE", "data": [
+                {"obsid": "7", "obs_id": "tess-s0001-0000000000000007",
+                 "target_name": "TIC 7", "sequence_number": 1,
+                 "provenance_name": "SPOC"},
+            ]}
+        return {"status": "COMPLETE", "data": []}
+
+    result = discover_tess_targets(sector=1, target_limit=48, query=query)
+    assert result["selected_targets"] == 0
+    assert result["shortfall"] == 48
+    assert result["refused_targets"][0]["tic_id"] == "7"
+
+    with pytest.raises(InvalidParameterError, match="from 1 through"):
+        discover_tess_targets(sector=1, target_limit=201, query=query)
+
+
+def test_period_catalogue_is_joined_to_earliest_exact_spoc_product():
+    catalogue = {
+        "schema": "spectral.tess-period-candidates/v1", "response_sha256": "a" * 64,
+        "candidates": [{"tic_id": "123", "toi": "1.01", "disposition": "KP",
+                        "orbital_period_days": 2.0, "orbital_period_seconds": 172800.0,
+                        "period_error_upper_days": 0.1, "period_error_lower_days": -0.1}
+                       for _ in range(48)],
+    }
+    for index, row in enumerate(catalogue["candidates"]):
+        row["tic_id"] = str(123 + index)
+
+    def query(request):
+        if request["service"] == "Mast.Caom.Filtered":
+            target = request["params"]["filters"][-1]["values"][0]
+            return {"status": "COMPLETE", "data": [{
+                "obsid": target, "obs_id": "tess-s0002-%s" % target.zfill(16),
+                "target_name": target, "sequence_number": 2, "provenance_name": "SPOC"}]}
+        target = str(request["params"]["obsid"])
+        filename = "tess-s0002-%s-test_lc.fits" % target.zfill(16)
+        return {"status": "COMPLETE", "data": [{
+            "obs_id": "obs-" + target, "productType": "SCIENCE",
+            "productSubGroupDescription": "LC", "productFilename": filename,
+            "dataURI": "mast:TESS/product/" + filename, "size": 2000}]}
+
+    result = discover_periodic_tess_products(catalogue, target_limit=48, query=query)
+    assert result["selected_targets"] == 48
+    assert result["shortfall_from_g17_minimum"] == 0
+    assert result["targets"][0]["orbital_period_seconds"] == 172800.0
+    assert result["targets"][0]["sector"] == 2
+    assert result["predicted_download_bytes"] == 96000
+
+
+def test_periodic_product_expansion_excludes_an_existing_inventory():
+    catalogue = {
+        "schema": "spectral.tess-period-candidates/v1", "response_sha256": "a" * 64,
+        "candidates": [{"tic_id": str(100 + index), "toi": "%d.01" % index,
+                        "disposition": "KP", "orbital_period_days": 2.0,
+                        "orbital_period_seconds": 172800.0,
+                        "period_error_upper_days": 0.1, "period_error_lower_days": -0.1}
+                       for index in range(49)],
+    }
+
+    def query(request):
+        if request["service"] == "Mast.Caom.Filtered":
+            target = request["params"]["filters"][-1]["values"][0]
+            return {"status": "COMPLETE", "data": [{
+                "obsid": target, "obs_id": "tess-s0001-%s" % target.zfill(16),
+                "target_name": target, "sequence_number": 1, "provenance_name": "SPOC"}]}
+        target = str(request["params"]["obsid"])
+        filename = "tess-s0001-%s-test_lc.fits" % target.zfill(16)
+        return {"status": "COMPLETE", "data": [{
+            "obs_id": "obs-" + target, "productType": "SCIENCE",
+            "productSubGroupDescription": "LC", "productFilename": filename,
+            "dataURI": "mast:TESS/product/" + filename, "size": 2000}]}
+
+    result = discover_periodic_tess_products(
+        catalogue, target_limit=48, excluded_target_ids={"100"}, query=query)
+    assert result["selected_targets"] == 48
+    assert result["excluded_target_count"] == 1
+    assert result["targets"][0]["tic_id"] == "101"
+
+
+def test_discovery_bound_acquisition_validates_and_publishes_exact_fits_bytes(tmp_path):
+    payload = fits_bytes()
+    product = LightCurveProduct(
+        observation_id="obs-1", data_uri="mast:TESS/product/test.fits",
+        filename="tess-s0001-%s-test_lc.fits" % TIC.zfill(16), sector=1,
+        size_bytes=len(payload))
+    discovery = {
+        "schema": "spectral.tess-pool-discovery.v1",
+        "sector": 1,
+        "selected_targets": 1,
+        "predicted_download_bytes": len(payload),
+        "targets": [{"tic_id": TIC, "observation_ids": ["obs-1"],
+                     "products": [product.describe()],
+                     "predicted_download_bytes": len(payload)}],
+    }
+
+    receipt = acquire_discovered_tess(
+        discovery, root=tmp_path / "raw", maximum_total_bytes=len(payload),
+        download=lambda _uri, _maximum: payload)
+
+    assert receipt["target_count"] == 1
+    assert receipt["downloaded_bytes"] == len(payload)
+    assert receipt["targets"][0]["tic_id"] == TIC
+    assert receipt["targets"][0]["timestamped_samples"] == 3
+    assert receipt["targets"][0]["finite_quality_zero_flux"] == 2
+    assert all(row["checksum_valid"] is True
+               for row in receipt["targets"][0]["products"][0]["fits_checksum"])
+    assert (tmp_path / "raw" / (hashlib.sha256(payload).hexdigest() + ".fits")).read_bytes() \
+        == payload
+
+
+def test_discovery_bound_acquisition_refuses_before_download_when_total_exceeds_cap(tmp_path):
+    discovery = {
+        "schema": "spectral.tess-pool-discovery.v1", "sector": 1,
+        "selected_targets": 1, "predicted_download_bytes": 100,
+        "targets": [{"tic_id": TIC, "observation_ids": ["obs-1"], "products": [],
+                     "predicted_download_bytes": 100}],
+    }
+    calls = []
+    with pytest.raises(InvalidParameterError, match="before any FITS product"):
+        acquire_discovered_tess(
+            discovery, root=tmp_path / "raw", maximum_total_bytes=99,
+            download=lambda uri, maximum: calls.append((uri, maximum)))
+    assert calls == []
+
+
+def test_period_qualified_acquisition_retains_external_native_period(tmp_path):
+    payload = fits_bytes()
+    product = LightCurveProduct(
+        observation_id="obs-1", data_uri="mast:TESS/product/test.fits",
+        filename="tess-s0001-%s-test_lc.fits" % TIC.zfill(16), sector=1,
+        size_bytes=len(payload))
+    discovery = {
+        "schema": "spectral.tess-period-product-discovery/v1",
+        "selected_targets": 1, "predicted_download_bytes": len(payload),
+        "targets": [{
+            "tic_id": TIC, "toi": "100.01", "disposition": "KP",
+            "orbital_period_seconds": 172800.0,
+            "period_error_upper_days": 0.01, "period_error_lower_days": -0.01,
+            "product": product.describe(), "predicted_download_bytes": len(payload),
+        }],
+    }
+
+    receipt = acquire_discovered_tess(
+        discovery, root=tmp_path / "raw", maximum_total_bytes=len(payload),
+        download=lambda _uri, _maximum: payload)
+
+    assert receipt["discovery_schema"] == discovery["schema"]
+    assert receipt["targets"][0]["orbital_period_seconds"] == 172800.0
+
+
+def test_period_qualified_acquisition_retains_each_targets_period_metadata(tmp_path):
+    target_ids = (TIC, str(int(TIC) + 1))
+    payloads = {target_id: fits_bytes(tic_id=target_id) for target_id in target_ids}
+    targets = []
+    for index, target_id in enumerate(target_ids):
+        payload = payloads[target_id]
+        product = LightCurveProduct(
+            observation_id="obs-%d" % index,
+            data_uri="mast:TESS/product/test-%s.fits" % target_id,
+            filename="tess-s0001-%s-test_lc.fits" % target_id.zfill(16), sector=1,
+            size_bytes=len(payload))
+        targets.append({
+            "tic_id": target_id, "toi": "%d.01" % (100 + index), "disposition": "KP",
+            "orbital_period_seconds": 172800.0 + index,
+            "period_error_upper_days": 0.01 + index,
+            "period_error_lower_days": -0.01 - index,
+            "product": product.describe(), "predicted_download_bytes": len(payload),
+        })
+    discovery = {
+        "schema": "spectral.tess-period-product-discovery/v1",
+        "selected_targets": 2,
+        "predicted_download_bytes": sum(len(payload) for payload in payloads.values()),
+        "targets": targets,
+    }
+
+    receipt = acquire_discovered_tess(
+        discovery, root=tmp_path / "raw",
+        maximum_total_bytes=discovery["predicted_download_bytes"],
+        download=lambda uri, _maximum: payloads[uri.rsplit("-", 1)[-1][:-5]])
+
+    assert [(row["tic_id"], row["toi"], row["orbital_period_seconds"])
+            for row in receipt["targets"]] == [
+                (target_ids[0], "100.01", 172800.0),
+                (target_ids[1], "101.01", 172801.0),
+            ]
+
+
+def test_period_qualified_assessment_binds_the_adopted_methods(tmp_path):
+    payload = fits_bytes()
+    product = LightCurveProduct(
+        observation_id="obs-1", data_uri="mast:TESS/product/test.fits",
+        filename="tess-s0001-%s-test_lc.fits" % TIC.zfill(16), sector=1,
+        size_bytes=len(payload))
+    discovery = {
+        "schema": "spectral.tess-period-product-discovery/v1",
+        "selected_targets": 1, "predicted_download_bytes": len(payload),
+        "targets": [{
+            "tic_id": TIC, "toi": "100.01", "disposition": "KP",
+            "orbital_period_seconds": 100.0,
+            "period_error_upper_days": 0.01, "period_error_lower_days": -0.01,
+            "product": product.describe(), "predicted_download_bytes": len(payload),
+        }],
+    }
+    receipt = acquire_discovered_tess(
+        discovery, root=tmp_path / "raw", maximum_total_bytes=len(payload),
+        download=lambda _uri, _maximum: payload)
+    receipt_path = tmp_path / "acquisition.json"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    assessment = assess_tess_pool_acquisition(receipt_path, tmp_path / "raw")
+
+    assert assessment["candidate_count"] == 1
+    assert assessment["profile_method_status"] == "ADOPTED"
+    assert assessment["method_review"]["adopted_by"] == "Ed Bentley"
+    assert assessment["records_reaching_minimum"] == 0
+    assert "no g17 profile is emitted" in assessment["claim_boundary"].lower()
+
+
+def test_acquisition_receipts_merge_without_duplicate_targets(tmp_path):
+    first = {"schema": "spectral.tess-pool-acquisition/v1",
+             "discovery_schema": "spectral.tess-period-product-discovery/v1",
+             "target_count": 1, "downloaded_bytes": 10,
+             "targets": [{"tic_id": "1"}], "claim_boundary": "raw only"}
+    second = {**first, "downloaded_bytes": 20, "targets": [{"tic_id": "2"}]}
+    paths = []
+    for index, body in enumerate((first, second)):
+        path = tmp_path / ("receipt-%d.json" % index)
+        path.write_text(json.dumps(body), encoding="utf-8")
+        paths.append(path)
+
+    merged = merge_tess_acquisitions(paths)
+    assert merged["target_count"] == 2
+    assert merged["downloaded_bytes"] == 30
+    assert [row["tic_id"] for row in merged["targets"]] == ["1", "2"]
+
+    second["targets"] = [{"tic_id": "1"}]
+    paths[1].write_text(json.dumps(second), encoding="utf-8")
+    with pytest.raises(UserInputError, match="unique"):
+        merge_tess_acquisitions(paths)
+
+
+def test_qualification_records_targets_that_fail_corrected_cycle_coverage(
+        tmp_path, monkeypatch):
+    receipt = {
+        "schema": "spectral.tess-pool-acquisition-collection/v1",
+        "targets": [{"tic_id": "1"}, {"tic_id": "2"}],
+    }
+    path = tmp_path / "merged.json"
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    def profile(target, _raw_root):
+        if target["tic_id"] == "2":
+            raise UserInputError("TESS candidate spans fewer than eight declared orbital cycles")
+
+    monkeypatch.setattr("src.core.tess_pool_assessment._profile", profile)
+    result = qualify_tess_acquisition(path, tmp_path)
+
+    assert result["target_count"] == 1
+    assert result["targets"] == [{"tic_id": "1"}]
+    assert result["refused_target_count"] == 1
+    assert result["refused_targets"][0]["tic_id"] == "2"
+
+
+def test_adopted_methods_export_canonical_source_bound_profile(tmp_path):
+    payload = fits_bytes(times=np.linspace(1.0, 1.02, 20), quality=[0] * 20)
+    product = LightCurveProduct(
+        observation_id="obs-1", data_uri="mast:TESS/product/test.fits",
+        filename="tess-s0001-%s-test_lc.fits" % TIC.zfill(16), sector=1,
+        size_bytes=len(payload))
+    discovery = {
+        "schema": "spectral.tess-period-product-discovery/v1",
+        "selected_targets": 1, "predicted_download_bytes": len(payload),
+        "targets": [{
+            "tic_id": TIC, "toi": "100.01", "disposition": "KP",
+            "orbital_period_seconds": 100.0,
+            "period_error_upper_days": 0.01, "period_error_lower_days": -0.01,
+            "product": product.describe(), "predicted_download_bytes": len(payload),
+        }],
+    }
+    receipt = acquire_discovered_tess(
+        discovery, root=tmp_path / "raw", maximum_total_bytes=len(payload),
+        download=lambda _uri, _maximum: payload)
+    receipt_path = tmp_path / "acquisition.json"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    result = export_tess_partner_profiles(
+        receipt_path, raw_root=tmp_path / "raw", record_root=tmp_path / "records",
+        profile_root=tmp_path / "profiles")
+
+    assert result["profile_count"] == 1
+    profile_path = tmp_path / "profiles" / ("tic-%s.partner-profile.json" % TIC)
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    record = tmp_path / "records" / ("tic-%s.csv" % TIC)
+    assert profile["source"]["content_sha256"] == hashlib.sha256(record.read_bytes()).hexdigest()
+    assert profile["method_review"]["adopted_by"] == "Ed Bentley"
+    assert profile["profile"]["provenance_key"].endswith(
+        receipt["targets"][0]["products"][0]["content_sha256"])
+
+    with pytest.raises(UserInputError, match="immutable"):
+        export_tess_partner_profiles(
+            receipt_path, raw_root=tmp_path / "raw", record_root=tmp_path / "records",
+            profile_root=tmp_path / "profiles")
+
+
 def test_acquisition_parses_archive_time_flags_and_binds_every_value():
     first_bytes = fits_bytes()
     second_bytes = fits_bytes(flux_offset=7.0)
@@ -132,6 +480,10 @@ def test_acquisition_parses_archive_time_flags_and_binds_every_value():
     assert first.source_sha256 == (hashlib.sha256(first_bytes).hexdigest(),)
     assert first.collection_sha256() != second.collection_sha256(), \
         "equal-length products with different flux values must never collide"
+    parsed = parse_spoc_fits(first_bytes, spec(), LightCurveProduct(
+        observation_id="obs", data_uri="mast:TESS/product/test.fits",
+        filename="test.fits", sector=1, size_bytes=len(first_bytes)))
+    assert all(row["checksum_valid"] is True for row in parsed["fits_checksum"])
 
 
 def test_cadences_the_archive_never_timestamped_are_dropped_and_counted():

@@ -1,0 +1,56 @@
+{
+  "schema": "t4e19-positional-error-decomposition/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.19",
+  "artefact": "the structure of the offset between an extracted feature and a catalogue cyclone centre",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_exists": "T4E.18 acquired a vorticity record and failed its acceptance, and the corrected diagnosis leaves two separable problems. Four storms of eighteen are refused at the crop's eastern boundary, which is arithmetic. The other fourteen have their nearest feature 16.6 to 99.3 km from the catalogue position, median about 35, against a catalogue radius whose median is 15.3 -- one to two grid cells. That offset is the real question, and it has three candidate causes that imply completely different work. Measuring which it is costs no acquisition and must come before anything is built.",
+  "the_three_candidate_causes_and_what_each_predicts": {
+    "why_predictions_are_declared_first": "Three causes that all produce 'about 35 km' are indistinguishable by the magnitude alone. They are distinguishable by what the offset CORRELATES with, and stating those predictions before the measurement is what stops the result being read into whichever cause was already believed.",
+    "cause_A_estimator_bias": {
+      "mechanism": "`_localise` places a feature by a windowed centroid of the excess above baseline. On an asymmetric field -- a cyclone with a trailing band, a frontal structure on one flank -- the centroid is pulled toward the broader side, away from the peak.",
+      "predicts": "Offset grows with the feature's own measured scale sigma, because a larger window integrates more asymmetry. Offset direction aligns with the local field asymmetry rather than with anything meteorological. Offset does NOT correlate with the catalogue's inter-agency spread.",
+      "would_mean": "An estimator defect, fixable in the extractor, and a defect that would affect every domain this tool is used on rather than just cyclones."
+    },
+    "cause_B_catalogue_uncertainty": {
+      "mechanism": "The catalogue radius IS the agencies' disagreement about where the centre is. If the true centre is uncertain by that much, an offset of that size is not an error at all.",
+      "predicts": "Offset correlates positively with the per-observation inter-agency spread, and its direction is isotropic -- no preferred bearing once storm motion is accounted for.",
+      "would_mean": "The comparison is being made at the wrong tolerance rather than failing. Nothing needs building; the acceptance condition needs restating against a tolerance that admits both uncertainties, and that restatement would need its own declaration."
+    },
+    "cause_C_a_real_physical_offset": {
+      "mechanism": "An 850 hPa relative-vorticity maximum need not sit at the surface centre an agency reports. Under vertical shear a cyclone tilts, and in extratropical transition the low-level vorticity centre separates from the surface low.",
+      "predicts": "Offset grows with latitude and with extratropical or subtropical NATURE, and shrinks with intensity -- a strong tropical cyclone is vertically stacked and a weak or transitioning one is not. Direction shows a preferred bearing relative to storm motion.",
+      "would_mean": "The offset is physics, not error. The catalogue's surface centre and the record's 850 hPa vorticity centre are different quantities, and joining them at the catalogue's radius is the wrong join however good either is. That would be a finding about the comparison, not about the instrument."
+    },
+    "they_are_not_exclusive": "All three can contribute. The measurement is a decomposition, not an election, and the result may be a mixture with one dominant term. What it must not do is report a mixture as whichever single cause was expected."
+  },
+  "what_is_measured": {
+    "population": "Every interior observation of the T4E.18 record, latitude -56 to -20 within the -58..-18 crop, 2018-2021, that has a catalogue radius. 176 observations from 18 storms.",
+    "the_dateline_cases_are_separated_not_dropped": "Observations at longitude 178 or east are a known, separate failure mode -- their windows overrun the crop boundary. They are measured and reported as their own group rather than pooled, because pooling them would inflate every offset statistic with a mode that has nothing to do with the three causes above.",
+    "extraction": "Raw-field extraction on the negated vorticity, not the SWT planes. The corrected T4E.18 measurement found raw markedly better for this purpose -- median nearest 52.1 km against 127.1 -- and a positional study wants one feature per cyclone rather than a plane-decomposed set.",
+    "per_observation": ["offset magnitude in km to the nearest extracted feature", "offset bearing", "the feature's measured sigma", "the catalogue's inter-agency spread for that observation", "storm intensity as USA_SSHS and WMO_WIND", "latitude", "NATURE", "storm motion bearing from the neighbouring catalogue positions"],
+    "the_pairing_rule_and_its_bias": "A feature is paired with an observation when it is the nearest within 200 km. That window is generous and is declared, not tuned. Conditioning on a pairing existing biases the offset distribution downward -- observations with no feature within 200 km contribute nothing to the offset statistics -- so the fraction with no pairing is reported alongside every statistic and never suppressed."
+  },
+  "acceptance_for_this_slice": {
+    "this_measures_and_decides_nothing_else": "The slice succeeds if it separates the three causes or states plainly that it cannot. It builds nothing, changes no extractor, and declares no criterion.",
+    "condition_1": "Every statistic reported with the number of observations behind it and the number that had no pairing.",
+    "condition_2": "The unit of independence is the storm, not the observation. Successive six-hourly positions of one cyclone are strongly correlated, so any correlation is reported with a storm-clustered interval and the effective sample size is nearer 18 than 176.",
+    "condition_3": "If the three causes cannot be separated at this sample size, that is the result and is to be reported as such rather than resolved by picking the most plausible.",
+    "condition_4": "Refusals by name: observations without a catalogue radius, frames that fail extraction, features refused as unmeasurable."
+  },
+  "what_this_slice_will_not_do": [
+    "It will not modify the extractor. Whether anything needs modifying is what it exists to determine.",
+    "It will not restate the T4E.18 acceptance. If cause B dominates, restating the tolerance is a separate declaration.",
+    "It will not evaluate any identity criterion, and none is declared.",
+    "It will not open the 2022-2023 forecast-test period, whose frames were deliberately never acquired."
+  ],
+  "governing_rules": [
+    "Declare the predictions before the measurement, so the result cannot be read into the cause already believed.",
+    "The unit of independence is the storm.",
+    "A named refusal is preferable to an unsupported number.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "claim_boundary": "A positional decomposition settles a property of an instrument and a catalogue in relation to each other, not a property of the atmosphere. No frame of the 2022-2023 forecast-test period is opened."
+}

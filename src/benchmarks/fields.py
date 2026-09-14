@@ -773,9 +773,16 @@ def _motif_positions(centre: Tuple[float, float], rotation_deg: float) \
     return out
 
 
-def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256) \
+def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256,
+                           features: Optional[int] = None) \
         -> List[Tuple[float, float]]:
     """One scene's feature centres: the motif somewhere, plus distractors.
+
+    `features` exists for T4E.12 and defaults to the frozen count, so every existing caller
+    builds exactly the scenes it built before. It is a knob because scene richness turns out to
+    govern the identity problem: a cardinality-three signature over `f` features yields C(f,3)
+    configurations, and cross-scene candidate pairs grow as the SQUARE of that, while the number
+    of true correspondences does not grow at all.
 
     The distractors are drawn under the same minimum separation the surrogate null uses,
     so the arrangement the null draws from is the arrangement the data was drawn from. A
@@ -783,6 +790,10 @@ def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256) \
     observed configurations a set the null cannot produce, and the p-value would then be
     measuring the placement rule rather than the motif.
     """
+    wanted = _MOTIF_FEATURES_PER_SCENE if features is None else int(features)
+    if wanted < _MOTIF_CONFIGURATION_SIZE:
+        raise ValueError("a scene must hold at least the %d motif features, not %d"
+                         % (_MOTIF_CONFIGURATION_SIZE, wanted))
     rng = np.random.default_rng(seed)
     margin = 0.16 * n
     positions: List[Tuple[float, float]] = []
@@ -791,17 +802,17 @@ def _motif_scene_positions(seed: int, *, plant: bool, n: int = 256) \
             (float(rng.uniform(0.35 * n, 0.65 * n)), float(rng.uniform(0.35 * n, 0.65 * n))),
             float(rng.uniform(0.0, 360.0)))
     for _ in range(2000):
-        if len(positions) >= _MOTIF_FEATURES_PER_SCENE:
+        if len(positions) >= wanted:
             break
         candidate = (float(rng.uniform(margin, n - margin)),
                      float(rng.uniform(margin, n - margin)))
         if all(math.hypot(candidate[0] - p[0], candidate[1] - p[1])
                >= _MOTIF_MIN_SEPARATION_CELLS for p in positions):
             positions.append(candidate)
-    if len(positions) != _MOTIF_FEATURES_PER_SCENE:
+    if len(positions) != wanted:
         raise RuntimeError(
             "could not place %d features at least %.1f cells apart on a %d-cell grid"
-            % (_MOTIF_FEATURES_PER_SCENE, _MOTIF_MIN_SEPARATION_CELLS, n))
+            % (wanted, _MOTIF_MIN_SEPARATION_CELLS, n))
     return positions
 
 
@@ -818,15 +829,17 @@ def _motif_field(positions: Sequence[Tuple[float, float]], bundle: SeedBundle,
 
 def build_planted_motif(bundle: SeedBundle, n: int = 256, scene_seed: int = 100,
                         plant: bool = True, noise_amplitude: float = 0.05,
-                        spacing_m: float = DEFAULT_SPACING_M) -> PhysicalField:
+                        spacing_m: float = DEFAULT_SPACING_M,
+                        features: Optional[int] = None) -> PhysicalField:
     """One scene: a scalene three-feature motif, plus distractors that are not it.
 
     The benchmark's own field is the *first training scene*, not a decoration beside the
     check: `_check_motif` mines it together with eleven more it builds, so the field the
     suite reports on is one of the frames the result was computed from.
     """
-    return _motif_field(_motif_scene_positions(scene_seed, plant=plant, n=n),
-                        bundle, n, noise_amplitude, spacing_m)
+    return _motif_field(
+        _motif_scene_positions(scene_seed, plant=plant, n=n, features=features),
+        bundle, n, noise_amplitude, spacing_m)
 
 
 def build_motif_null(bundle: SeedBundle, n: int = 256, scene_seed: int = 500,

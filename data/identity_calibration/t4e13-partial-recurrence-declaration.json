@@ -1,0 +1,79 @@
+{
+  "schema": "t4e12-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.13",
+  "candidate": "3_partial_recurrence_at_k_below_the_partition_size",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "why_this_candidate": "T4E.12 candidate 2 passed at k = S, the whole partition, and reproduced on two reserved partitions. Its own declaration records why that is not enough: 'k = S WILL NOT TRANSFER TO AN ACQUIRED RECORD. A real pattern need not appear in every window, and this criterion rejects a configuration absent from a single scene outright.' A record with partial recurrence needs a k below S. This candidate is that criterion, and it is declared BEFORE anything is measured at any k below S, which is the one property candidate 2 could not have.",
+  "the_blindness_claim_stated_exactly": {
+    "what_is_claimed": "The value of k, the rule that fixes it, and every structural choice around it are fixed in this file before any measurement has been taken at any k below the partition size, on any block, planted or null, development or reserved.",
+    "what_is_already_known_and_is_disclosed_rather_than_hidden": [
+      "From candidate 2's exact measurement at k = S: no coincidental group reaches 6 in any of the four development blocks or the null, at any of the three richness levels. The coincidental ceiling under exact enumeration is therefore at most 5 on all evidence seen.",
+      "From the greedy feasibility probe disclosed in candidate 2's declaration: non-motif groups reached 5 at block 300-305, richness 9, and 4 at block 100-105 richness 6 and on the null. Greedy gives a lower bound on group size, so the true counts at 5 may be higher.",
+      "Nothing is known about HOW MANY coincidental groups reach 5, which is the quantity this candidate's error rate depends on entirely."
+    ],
+    "why_that_disclosure_does_not_void_the_claim": "k is fixed here by a rule stated before the fact, not by a number chosen to fit one. The disclosed information points the other way from tuning: it says k = S - 1 sits AT the observed coincidental ceiling and is the value most likely to fail. A tuned choice would have been k = S, which is already known to work. This is the severest available test of the relaxation, not the safest.",
+    "what_would_void_the_claim": "Measuring at any k below S and then revising k, the clique rule, the proposer, the richness levels, the blocks or the acceptance conditions. If that happens it is a new candidate needing a new declaration, and this file is superseded in the open rather than edited."
+  },
+  "criterion": {
+    "statement": "Exactly candidate 2's criterion with one change: a consistent set is admitted when it spans at least k = S - 1 scenes rather than all S. Across a partition of S scenes, form the mutual nearest-neighbour matching for every ordered scene pair as candidate C does; a set of configurations, at most one per scene, is CONSISTENT when every member is the mutual nearest neighbour of every other; admit the cross-scene pairs inside consistent sets spanning at least k scenes, and no others.",
+    "name": "mutual_nearest_neighbour_consistency_tolerating_one_absence",
+    "k": "S - 1, which is 5 for these six-scene partitions",
+    "the_rule_that_fixes_k": "Tolerate exactly one absence. It is the minimal relaxation of candidate 2: the only k below S that can be named without choosing a free fraction, and the smallest step that admits partial recurrence at all. Every other k below S requires picking a proportion of the window, and a proportion picked without evidence is a free parameter wearing a principle's clothes.",
+    "k_is_a_function_of_S_not_a_constant": "The criterion is 'at most one absence', so k tracks the partition size. This is stated because a criterion whose k were the literal number 5 would silently become stricter or laxer when S changed, and its error rates would not be comparable across partitions of different sizes.",
+    "the_limitation_of_that_rule_declared_now": "On a long record S is large and S - 1 is nearly as strict as S, so 'tolerate one absence' does NOT solve the transfer problem candidate 2 named; it is one step along it. A criterion that transfers to an acquired record will need a k that is a proportion of S, and the proportion will need its own evidence. This candidate is the first rung, and calling it the whole ladder would be a misreading.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes the pairs, the exact rather than greedy enumeration, the one-configuration-per-scene requirement, the scenes, the richness levels, and the definitions of both error rates. Candidates C, D, 2 and 3 are therefore counted over exactly the same population and are directly comparable."
+  },
+  "what_is_derivable_before_measuring_and_must_not_be_reported_as_a_finding": {
+    "why_this_section_exists": "Candidate 1 failed two conditions that were derivable before adoption and were not derived. The lesson recorded from that failure is that a declaration must work out in advance what its own measurement can and cannot contain. Here that exercise removes half of the acceptance from contention, and saying so afterwards would be too late to be credible.",
+    "monotonicity": "The admitted set is non-decreasing as k falls: any group spanning at least S scenes also spans at least S - 1, so admitted(k = S - 1) is a SUPERSET of admitted(k = S) on every partition.",
+    "the_consequence_for_recall": "Candidate 2's false split is 0.0000 on every development block at every richness. By monotonicity candidate 3's false split is therefore 0.0000 on those same blocks BEFORE it is run. Acceptance condition 1 is passed by arithmetic, not by evidence, and the result must say so in those words.",
+    "the_consequence_for_the_finding": "The entire empirical content of this candidate is on the admission side: how many coincidental groups span exactly S - 1 scenes, and whether that number grows with richness. Nothing else in the measurement is informative.",
+    "the_criterion_cannot_be_inert": "It admits at least candidate 2's 15 motif pairs per block by the same monotonicity, so it does not fail the way candidate 1 did, which admitted nothing anywhere and was therefore never tested.",
+    "the_direction_of_the_prediction": "Declared here so it can be checked rather than fitted afterwards: coincidental groups ARE expected to reach 5, because the greedy probe already found some at richness 9, and greedy under-counts. This candidate is therefore expected to admit false pairs, and the open questions are how many and whether the count grows with richness."
+  },
+  "development": {
+    "richness_levels": [6, 9, 12],
+    "blocks": [
+      [100, 101, 102, 103, 104, 105],
+      [200, 201, 202, 203, 204, 205],
+      [300, 301, 302, 303, 304, 305],
+      [400, 401, 402, 403, 404, 405]
+    ],
+    "null_blocks": [[500, 501, 502, 503, 504, 505]],
+    "status": "ALREADY INSPECTED, and by now among the most inspected data in this programme: they informed T4E.10, T4E.11's four candidates, the scaling measurement, candidate 1, candidate 2 and its feasibility probe. Results on them are development evidence and may not be reported as confirmation, whatever this candidate's blindness claim says. Blindness is about when k was fixed; it does not make inspected blocks fresh."
+  },
+  "the_k_profile": {
+    "what_is_measured": "The admitted count, both error rates and the matched fraction at k in {6, 5, 4, 3} on the development blocks and the null, at all three richness levels.",
+    "what_it_is_for": "Characterisation of how the criterion degrades as the tolerance widens, which is the quantity the mining path needs and which no measurement so far supplies.",
+    "what_it_is_explicitly_not_for": "Selecting a k. R20 forbids the horse race and this declaration forbids it specifically: the criterion under evaluation is k = S - 1 and its verdict is decided by the acceptance conditions below, alone. If the profile makes some other k look attractive, that k is a further candidate requiring its own declaration, its own blindness claim -- which it will NOT be able to make, because the profile will have been seen -- and its own evidence. Recording that in advance is the point of this clause."
+  },
+  "confirmatory": {
+    "blocks": [
+      [720, 721, 722, 723, 724, 725],
+      [730, 731, 732, 733, 734, 735]
+    ],
+    "status": "STILL RESERVED AND NOT YET GENERATED. This declaration does not open them, and adopting it does not open them. They are refused in code by STILL_RESERVED_CONFIRMATORY_SEEDS even under confirmatory=True.",
+    "when_spending_them_would_be_worth_it": "If and only if this candidate meets its acceptance conditions on development evidence. They are the last two untouched partitions in the programme and a confirmatory pass on a falsified candidate would spend them for nothing. Opening them requires its own amendment and the maintainer's explicit decision, exactly as the previous two did.",
+    "why_they_would_be_worth_more_here_than_for_candidate_2": "Candidate 2's confirmatory pass could not establish that a blind structural choice would have produced its result, because k = S followed a probe. This candidate's k was fixed before any measurement at any k below S, so a confirmatory pass here would establish the thing that one could not."
+  },
+  "acceptance": {
+    "condition_1_recall": "False split at most 0.10 at every richness level individually. DECLARED IN ADVANCE TO BE PASSED BY ARITHMETIC, per the derivation section. It is retained only so the population and the counting stay identical to candidates C, D and 2, and it carries no evidential weight.",
+    "condition_2_matched_fraction": "The matched fraction of configurations must FALL as richness grows, at k = S - 1, on every development block.",
+    "condition_3_admission": "The false admission rate must be at most 0.10 at every richness level individually, and the shortfall factor -- achieved over required per-pair false rate -- must be non-increasing across the three richness levels.",
+    "condition_4_null": "On the null partition, where nothing recurs, the admitted count must be zero at every richness. Not near zero: zero. Candidate 2 achieved that at k = S, and a relaxation that starts admitting coincidences where there is nothing to recur has not relaxed, it has broken.",
+    "condition_5_refusals": "Refusals reported by name, with an explicit verdict including INVALID. Configurations refused as incomparable by the near-isotropy rule are counted and surfaced, as in T4E.12."
+  },
+  "what_would_falsify_this_candidate": "A false admission rate above 0.10 at any richness, or a shortfall that widens with richness, or any admission at all on the null, or a matched fraction that does not fall with richness. Any of these is a complete result and is to be recorded, not tuned away. Raising k back towards S to rescue the admission rate is specifically forbidden: k = S is candidate 2 and is already measured, and re-running it under a new name would be a horse race conducted after the fact.",
+  "what_a_failure_would_and_would_not_license": "It would license this: tolerating a single absence, as defined here, admits coincidences that consistency across the whole partition excludes, in these scenes at these richness levels. It would NOT license concluding that the signature is inadequate, that partition structure is the wrong resource, that partial recurrence cannot be detected, or that some other k would fail -- and it would specifically NOT license concluding that k = S is the right operating point for an acquired record, because candidate 2's own limitation about partial recurrence would be untouched by this candidate's failure. The over-reach in T4E.11's candidates B and C is the reason this clause is written narrowly.",
+  "what_a_success_would_and_would_not_license": "A success on these blocks would license only that the criterion separates recurrence from coincidence at k = S - 1 ON ALREADY-INSPECTED SYNTHETIC PARTITIONS, with a k fixed blind. It would make spending the last two reserved partitions worthwhile and would NOT itself constitute confirmation. It would not approve a mining radius, discharge T4E.8's acquired-record acceptance, close D96, D97, D98, D99 or D100, or say anything about recurrence ACROSS partitions, which is what the mining, sequence and precursor machinery downstream actually needs.",
+  "governing_rules": [
+    "R20: candidate 3 is evaluated alone, against the conditions above. The k profile is characterisation and adjudicates nothing; candidates C, D and 2 appear only as the proposer of pairs and as arithmetic references, which is not adjudication.",
+    "Already inspected data do not become untouched by renaming them, and do not become untouched by a blind declaration either.",
+    "A named refusal is preferable to an unsupported number.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism is domain-agnostic but the evidence produced here is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this."
+}

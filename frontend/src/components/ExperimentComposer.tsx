@@ -481,7 +481,7 @@ export default function ExperimentComposer({ onSelectStudy, onEvidenceHandoff, r
     <div className="space-y-6 animate-fadeIn">
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <FileLock2 className="w-5 h-5 text-teal-400" aria-hidden="true" /> Experiment Composer
+          <FileLock2 className="w-5 h-5 text-teal-400" aria-hidden="true" /> New experiment
         </h2>
         <p className="text-sm text-slate-400 mt-1">One versioned manifest, walked in the order the
           server declares. Every step below is a commitment, and the next one is named for you.</p>

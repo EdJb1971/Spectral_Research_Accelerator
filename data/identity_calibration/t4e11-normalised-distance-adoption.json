@@ -1,0 +1,24 @@
+{
+  "schema": "t4e11-adoption/v1",
+  "adopts": "data/identity_calibration/t4e11-normalised-distance-declaration.json",
+  "adopts_sha256": "ee9715ead35fc01f6fddeb8336936a102ad1410c2c18958a408909dfe4f7e7ec",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-09",
+  "what_was_adopted": "The preregistration is now in force. Candidate B -- the comparably-scaled distance, normalised by each partition's median nearest-cross-scene-neighbour distance -- is the declared next attempt at an identity criterion that survives a change of partition.",
+  "what_was_not_adopted": "Candidate B is NOT adopted as the identity criterion. Adopting the declaration authorises the development evaluation on the four already-inspected blocks and nothing further. The reserved confirmatory blocks stay reserved until development evidence supports proceeding and a further amendment records that.",
+  "declaration_file_unchanged": "The declaration is kept byte-identical and this adoption is recorded separately, so the artifact that was declared before measurement can still be verified against its own hash.",
+  "governing": [
+    "R20: candidate B is evaluated alone. Evaluating it alongside C voids this.",
+    "Development results on the four inspected blocks are development evidence and may not be reported as confirmation."
+  ],
+  "development_outcome": {
+    "status": "FALSIFIED_ON_DEVELOPMENT_EVIDENCE",
+    "measured_on": "2026-09-09",
+    "raw_mean_ratio_across_blocks": 1.876,
+    "normalised_mean_ratio_across_blocks": 1.991,
+    "summary": "Normalising did not collapse the spread; it left it marginally wider.",
+    "why": "The normaliser varies only 1.084x across blocks while the same-configuration scale varies 1.876x, sits 7-14x above that scale, and correlates -0.21 with it. A median over every configuration's nearest cross-scene neighbour is dominated by the unrelated majority -- 114 of 120 configurations per block are not the motif -- so it measures the nearest-UNRELATED distance, which is a different regime from the same-configuration one the radius operates in.",
+    "correction_to_this_declaration": "The declaration stated that failure would show the shape was moving rather than the scale. That is NOT established and the reasoning was imprecise. The same-configuration scale still moves 1.876x; this particular label-free normaliser does not track it. Whether some other label-free normaliser would is open and would require its own declaration. The declaration file is left byte-identical and this correction is recorded here rather than edited into it.",
+    "what_this_does_not_authorise": "It does not authorise trying variants until one works. A different normaliser is a new candidate needing its own declaration and adoption under R20. The reserved confirmatory blocks remain untouched and unreserved by this outcome."
+  }
+}

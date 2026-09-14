@@ -1,6 +1,6 @@
 import { expect, test, Page } from '@playwright/test';
 
-const COMPOSER = 'Experiment Composer';
+const COMPOSER = 'New experiment';
 
 async function openComposer(page: Page) {
   await page.goto('/');
@@ -15,7 +15,7 @@ async function step(page: Page, name: RegExp) {
 test('the generated release gate runs offline but refuses to certify unrun science', async ({ page }) => {
   test.slow();
   await page.goto('/');
-  await page.getByRole('button', { name: 'Platform & evidence', exact: true }).click();
+  await page.getByRole('button', { name: 'System health & validation', exact: true }).click();
   const gate = page.getByRole('region', { name: 'G17 flagship release qualification' });
   await expect(gate.getByRole('table', {
     name: 'Duration and comparison mode qualification matrix' })).toBeVisible();

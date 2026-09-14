@@ -1,0 +1,165 @@
+{
+  "band_changed_fraction": 0.6083650190114068,
+  "caveat": "The clean stratum holds 124 pairs, so its 90th percentile rests on about a dozen observations and its tail is coarse. Differences between weightings within that stratum are inside that noise; what is not inside it is that the strengths block alone scores an AUC of 0.5053 over 6650 pairs, which is a coin flip.",
+  "displacement_cells": {
+    "max": 13.652283550265654,
+    "median": 3.2523499686018558,
+    "q05": 1.2661105889913038,
+    "q95": 6.272538833102062
+  },
+  "reading": "the same tracked constellation observed again: two signatures are one configuration when their track_ids match. No null and no mixture appears anywhere in this record; both rates are counts against these labels.",
+  "record": {
+    "configurations_observed_more_than_once": 4444,
+    "distinct_configurations": 64153,
+    "frame_step_seconds": 21600.0,
+    "frames": 480,
+    "signatures": 69580
+  },
+  "schema": "spectral-identity-replicate-census/v1",
+  "strata": {
+    "counts": {
+      "band_flipped": 64,
+      "clean": 124,
+      "evolving": 6650
+    },
+    "definition": {
+      "band_flipped": "one frame apart, moved <= 1 cell, but a node changed band",
+      "clean": "one frame apart, no band change, furthest track moved <= 1 cell",
+      "evolving": "everything else -- further apart in time, or the tracks moved"
+    },
+    "sampling_seed": 20260908,
+    "unrelated_pairs_sampled": 20000
+  },
+  "weightings": {
+    "declared": {
+      "metric_digest": "54d4733273d0c5c0ad5ee4567a38f961135ee8e1f6b82c709bce16f207618b42",
+      "strata": {
+        "band_flipped": {
+          "auc": 0.72735234375,
+          "median_distance": 0.3485164467218338,
+          "n": 64,
+          "radius_at_90_percent_recall": 0.43388506162036566,
+          "unrelated_admitted_there": 0.37165
+        },
+        "clean": {
+          "auc": 0.9692237903225807,
+          "median_distance": 0.04717535418981195,
+          "n": 124,
+          "radius_at_90_percent_recall": 0.1400479271932269,
+          "unrelated_admitted_there": 0.06325
+        },
+        "evolving": {
+          "auc": 0.7797368496240602,
+          "median_distance": 0.30545471180005956,
+          "n": 6650,
+          "radius_at_90_percent_recall": 0.609643726166382,
+          "unrelated_admitted_there": 0.56125
+        }
+      }
+    },
+    "geometry_only": {
+      "metric_digest": "3e3051b7644dab4e9019696d9f5f5ea858089fc10f63068f6b5e715f7a9b2948",
+      "strata": {
+        "band_flipped": {
+          "auc": 0.76929453125,
+          "median_distance": 0.34671224010669927,
+          "n": 64,
+          "radius_at_90_percent_recall": 0.5575100843451446,
+          "unrelated_admitted_there": 0.35995
+        },
+        "clean": {
+          "auc": 0.9530100806451612,
+          "median_distance": 0.02989039539779973,
+          "n": 124,
+          "radius_at_90_percent_recall": 0.13746949624013835,
+          "unrelated_admitted_there": 0.0928
+        },
+        "evolving": {
+          "auc": 0.7969422406015038,
+          "median_distance": 0.27903690963558,
+          "n": 6650,
+          "radius_at_90_percent_recall": 0.7479478571811677,
+          "unrelated_admitted_there": 0.46825
+        }
+      }
+    },
+    "no_scales": {
+      "metric_digest": "51f810a8a8679e5662b988d291b6fce524ecc6ca8e123ea69cb8535193578998",
+      "strata": {
+        "band_flipped": {
+          "auc": 0.765659375,
+          "median_distance": 0.2641580502208749,
+          "n": 64,
+          "radius_at_90_percent_recall": 0.4015300490274969,
+          "unrelated_admitted_there": 0.3575
+        },
+        "clean": {
+          "auc": 0.9449108870967742,
+          "median_distance": 0.05743640812326539,
+          "n": 124,
+          "radius_at_90_percent_recall": 0.1593850991669614,
+          "unrelated_admitted_there": 0.1257
+        },
+        "evolving": {
+          "auc": 0.7924861428571428,
+          "median_distance": 0.21561059537677993,
+          "n": 6650,
+          "radius_at_90_percent_recall": 0.5371147405314658,
+          "unrelated_admitted_there": 0.4693
+        }
+      }
+    },
+    "no_strengths": {
+      "metric_digest": "61643ce9cee47ea04393d5d4761f0bc1701bc504f0c282e1a7b8ea8f3f780b04",
+      "strata": {
+        "band_flipped": {
+          "auc": 0.732503125,
+          "median_distance": 0.41378262752804107,
+          "n": 64,
+          "radius_at_90_percent_recall": 0.5234932907757671,
+          "unrelated_admitted_there": 0.37355
+        },
+        "clean": {
+          "auc": 0.9725689516129032,
+          "median_distance": 0.021135701278131365,
+          "n": 124,
+          "radius_at_90_percent_recall": 0.09720561299770043,
+          "unrelated_admitted_there": 0.0449
+        },
+        "evolving": {
+          "auc": 0.782061022556391,
+          "median_distance": 0.36342452831719796,
+          "n": 6650,
+          "radius_at_90_percent_recall": 0.7376370100828048,
+          "unrelated_admitted_there": 0.55875
+        }
+      }
+    },
+    "strengths_only": {
+      "metric_digest": "3b81b4ca6e2484a3aa2a59a0b8634a2b5802736b6d90bfb61d8d06b3906f360b",
+      "strata": {
+        "band_flipped": {
+          "auc": 0.4473,
+          "median_distance": 0.09074928395221342,
+          "n": 64,
+          "radius_at_90_percent_recall": 0.24581985689320168,
+          "unrelated_admitted_there": 0.9413
+        },
+        "clean": {
+          "auc": 0.5917983870967742,
+          "median_distance": 0.049449569408105916,
+          "n": 124,
+          "radius_at_90_percent_recall": 0.13496376395675894,
+          "unrelated_admitted_there": 0.7547
+        },
+        "evolving": {
+          "auc": 0.5053243759398496,
+          "median_distance": 0.0705113640543856,
+          "n": 6650,
+          "radius_at_90_percent_recall": 0.20390491482365608,
+          "unrelated_admitted_there": 0.89465
+        }
+      }
+    }
+  }
+}

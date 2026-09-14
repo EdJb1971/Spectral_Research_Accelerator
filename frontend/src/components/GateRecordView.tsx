@@ -96,7 +96,7 @@ export default function GateRecordView({ onError }: { onError?: (message: string
             <h3 id="gate-title"
                 className="text-sm font-semibold text-slate-200 flex gap-2 items-center">
               <Landmark className="w-4 h-4 text-sky-400" aria-hidden="true" />
-              Atmospheric gate record (T4C)
+              Atmospheric evidence decision
             </h3>
             <p className="text-[11px] text-slate-500 mt-1 max-w-3xl">
               Preregistered ERA5 gate designs, the checked records that retire one, and the

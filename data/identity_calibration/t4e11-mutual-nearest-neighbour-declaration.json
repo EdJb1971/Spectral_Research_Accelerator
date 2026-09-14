@@ -1,0 +1,141 @@
+{
+  "schema": "t4e11-identity-criterion-declaration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.11",
+  "candidate": "C_mutual_nearest_neighbour_no_absolute_scale",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-09",
+  "supersedes_nothing": "Candidate B is falsified, not superseded. Its declaration, adoption and outcome are kept in full at t4e11-normalised-distance-declaration.json and t4e11-normalised-distance-adoption.json.",
+  "why_this_candidate_and_why_now": "A frozen absolute radius does not transfer (T4E.10: blocks differ 1.876x). Candidate B tried to remove that scale dependence by division and failed, because the label-free normaliser it used did not track the same-configuration scale -- the normaliser moved 1.084x while the quantity moved 1.876x, sat 7-14x above it and correlated -0.21 with it. That failure is what motivates C: a criterion with no absolute scale has nothing to transfer and nothing to normalise, so neither failure mode can occur. The evidence that makes C plausible is T4E.9's AUC of 1.0 with zero admissions in 11,985 pairs -- the ordering of distances separates the motif perfectly even where their magnitudes do not agree between blocks.",
+  "criterion": {
+    "statement": "Within an ordered pair of scenes (A, B), configuration a in A and b in B are the same when b is a's nearest neighbour among B's configurations AND a is b's nearest neighbour among A's configurations. No radius, no threshold and no normaliser.",
+    "name": "mutual_nearest_neighbour_per_scene_pair",
+    "why_per_scene_pair_and_not_a_global_k": "A global mutual k-NN needs k declared, and k encodes how many times a configuration is expected to recur. In a six-scene partition a motif has five partners, so choosing k=5 would be fitting the criterion to the construction -- exactly the move R20 exists to prevent, and one that would not survive contact with a real record where recurrence counts are unknown. Restricting to one scene pair at a time makes the rule parameter-free.",
+    "modelling_assumption_this_encodes": "One-to-one correspondence at the INSTANCE level: each extracted configuration instance has at most one corresponding instance in any other scene under the declared matching scope. It does NOT assume a physical kind occurs at most once per frame -- ten similar phenomena may sit in one scene, each an individual instance with at most one counterpart elsewhere, and mutual nearest-neighbour matching between two scenes returns a one-to-one partial matching that can hold many such pairs at once. The cost of the assumption is confined to genuine one-to-many correspondence, where one instance really does answer to two in another scene; that case cannot be fully recovered and the cost is accepted here rather than discovered later.",
+    "what_changes": "What identity is: a relational rule between two scenes rather than a property of a distance magnitude.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the acceptance bounds, and the evaluation and null partitions.",
+    "how_many_matches_per_scene_pair": "As many as the scenes support, up to the smaller scene's configuration count. Mutual nearest-neighbour is a matching rule, not a single-winner rule."
+  },
+  "how_the_error_rates_are_defined": "False split: a construction-labelled motif pair that the rule does not match. False admission: a matched pair that is not a motif pair. Both counted over ordered scene pairs within a partition, both reported or refused by name.",
+  "the_null_is_the_reference_and_already_exists": "There is no radius, so there is no radius-feasibility diagnostic. The reference is the null partition, whose scenes keep the feature count and the family and drop only the repetition: every match the rule makes there is a false positive by construction. A rank-based rule always returns SOME nearest neighbour, so its false-positive rate is the number that decides whether it means anything, and it cannot be read off the planted scenes alone.",
+  "what_transfer_means_for_this_candidate": "B had a radius to carry between blocks. C has nothing to carry, so transfer is not portability of a number but stability of the error rates: the split and admission rates must be materially similar across the four development blocks, not merely acceptable on average. A criterion whose error rates swing between blocks has the same defect as a radius that does not transfer, in a different costume.",
+  "development": {
+    "blocks": [
+      [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ]
+    ],
+    "null_blocks": [
+      [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ]
+    ],
+    "status": "ALREADY INSPECTED. These blocks informed T4E.10, candidate B and this declaration. Results on them are development evidence and may not be reported as confirmation.",
+    "purpose": "Does a rule with no absolute scale recover the motif, and are its error rates stable across blocks whose distance magnitudes differ by 1.876x?"
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        700,
+        701,
+        702,
+        703,
+        704,
+        705
+      ],
+      [
+        710,
+        711,
+        712,
+        713,
+        714,
+        715
+      ],
+      [
+        720,
+        721,
+        722,
+        723,
+        724,
+        725
+      ],
+      [
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+      ]
+    ],
+    "status": "STILL RESERVED AND NOT YET GENERATED. Candidate B's failure did not unreserve them and neither does this declaration. They are opened only after a criterion is adopted on development evidence and an amendment records that.",
+    "enforcement": "RESERVED_CONFIRMATORY_SEEDS in src/benchmarks/identity_certification.py refuses them before a scene is built."
+  },
+  "acceptance": {
+    "development": "Both error rates within 0.10 on every development block individually, and materially stable between blocks. Stability is the property B lacked and is the point of the task; a good average across unstable blocks is a fail.",
+    "confirmatory": "On the reserved blocks, both error rates within 0.10, reported or refused by name, with an explicit verdict including INVALID.",
+    "a_refusal_is_an_outcome": "A scene pair with no configurations, or a partition of fewer than two scenes, must refuse rather than report zero errors."
+  },
+  "what_would_falsify_this_candidate": "Error rates that are individually acceptable but swing between blocks, which would mean the ordering is as partition-dependent as the magnitudes were. Or a false-admission rate on the null blocks that is not near zero, which would mean the rule matches whatever is nearest whether or not anything recurs -- the characteristic failure of a rule that always returns an answer. Either outcome is a complete result and is to be recorded, not tuned away. If C fails, the honest reading is that the identity question is not answerable by a criterion of this shape on this signature, and the next move is the signature rather than a fourth criterion.",
+  "governing_rules": [
+    "R20: candidate C is evaluated alone. It is not compared against B to pick a winner; B is already falsified and its result stands on its own.",
+    "Already inspected data do not become untouched by renaming them.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius -- there is no radius -- discharges T4E.8's acquired-record acceptance, or closes D96, D97 or D98. The primary scientific target remains kind_recurrence, which needs external_reference evidence this criterion does not supply. No frame of the 2022-2023 forecast-test period is opened by any part of this.",
+  "scope_and_what_this_does_not_establish": {
+    "mechanism": "Domain-agnostic in form. Mutual nearest-neighbour matching between configurations does not care whether the scenes are atmospheric, oceanic, astronomical or financial, and a parameter-free scale-free relational rule is the shape of thing that has some chance of surviving heterogeneous domains.",
+    "evidence": "Atmospheric only. This evaluation sits on the atmospheric identity path and its scenes come from one generator. Behaving well here does not establish that it transfers across domain adapters.",
+    "what_cross_domain_use_would_require": "Its own declared experiment under the cross-domain programme, which carries its own qualification rules, adapters, scale and shape inference, exchangeability requirements and release gate. R19 applies: a structural rule that behaves on one domain licenses no claim about another. Nothing in this declaration adopts C anywhere but here."
+  },
+  "pre_adoption_corrections": [
+    {
+      "corrected_on": "2026-09-09",
+      "prompted_by": "External review sought by the maintainer before adoption.",
+      "was": "The declaration stated the assumption as 'a configuration appears at most once in a scene, so at most one match exists per ordered scene pair'.",
+      "why_that_was_wrong": "It misdescribed the criterion it was declaring. Mutual nearest-neighbour between two scenes returns a one-to-one partial matching and can hold many pairs simultaneously; it does not restrict a scene to one match. The prose had turned a one-to-one correspondence assumption into a false claim about how often a physical kind may occur in a frame.",
+      "now": "Stated at the instance level, as one-to-one correspondence under the declared matching scope, which is what the rule actually assumes.",
+      "status": "Corrected before adoption and before any measurement. No result exists under the earlier wording."
+    },
+    {
+      "corrected_on": "2026-09-09",
+      "prompted_by": "The same review.",
+      "was": "The declaration was silent on whether this is cross-domain work.",
+      "now": "scope_and_what_this_does_not_establish records that the mechanism is domain-agnostic while the evidence is atmospheric, and that cross-domain use needs its own declared experiment under R19."
+    }
+  ]
+}

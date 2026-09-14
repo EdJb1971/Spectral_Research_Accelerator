@@ -38,8 +38,8 @@ export function EvaluationEvidence({ reports, importing, onImport }: {
       <FileCheck2 className="w-8 h-8 text-slate-600 mx-auto mb-3" />
       <h3 className="text-sm font-semibold text-slate-300">No authenticated real evaluation receipt</h3>
       <p className="text-xs text-slate-500 mt-2 max-w-xl mx-auto leading-relaxed">
-        Metrics and plots remain absent until a T5.6e receipt passes integrity, lineage, forecast-artifact,
-        and accepted ERA5-source checks. Synthetic demonstrations are deliberately not shown here.
+        Metrics and plots appear after a receipt passes integrity, lineage, forecast-file, and
+        accepted ERA5-source checks. Synthetic demonstrations are deliberately kept separate.
       </p>
     </div> : <>
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-3">

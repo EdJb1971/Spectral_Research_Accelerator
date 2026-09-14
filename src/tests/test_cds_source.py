@@ -662,3 +662,372 @@ def test_the_lattice_search_survives_the_magnitudes_the_other_variables_live_at(
                             (1.0e-3, 2.0 ** -24)):     # specific humidity
         packed = np.round(np.linspace(magnitude, magnitude * 1.02, 4096) / step) * step
         assert encoding_step(packed) == step, magnitude
+
+
+# ---------------- T4E.18: relative vorticity, and the sign it must be read with
+#
+# The identity path cannot join an external cyclone catalogue to a record of 850 hPa
+# temperature: features there sit a median 153.9 km from a catalogue centre against a catalogue
+# radius of 15.2 km. A cyclone IS a compact extremum in relative vorticity, which is why the
+# variable was added. What it is NOT is a maximum, in this hemisphere.
+
+
+def test_relative_vorticity_can_be_requested_and_is_not_potential_vorticity():
+    """`vorticity` and `potential_vorticity` are different CDS variables, and only one is meant."""
+    from src.data_layer.cds_source import CDS_VARIABLES
+
+    assert CDS_VARIABLES["vo"] == "vorticity"
+    assert "potential_vorticity" not in CDS_VARIABLES.values()
+
+
+def test_the_southern_hemisphere_sign_convention_is_recorded_where_a_reader_will_meet_it():
+    """A maximum-finder on raw vorticity in a southern crop locates ANTICYCLONES.
+
+    The convention that repairs it -- negate before extraction -- is a transformation this
+    programme chose, not a property of the data. It is declared before the record exists so it
+    cannot become a knob turned after a disappointing result, and it is written beside the
+    variable so that whoever requests it next cannot miss it.
+    """
+    import json
+    from pathlib import Path
+
+    import src.data_layer.cds_source as cds
+
+    source = Path("src/data_layer/cds_source.py").read_text(encoding="utf-8")
+    marker = source[source.index('"z": "geopotential"'):source.index('"vo": "vorticity"')]
+    assert "NEGATIVE vorticity" in marker
+    assert "negate the" in marker
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    convention = design["the_sign_convention_is_declared_before_the_data_exists"]
+    assert "locate ANTICYCLONES" in convention["the_problem"]
+    assert "negated before extraction" in convention["the_convention"]
+    assert "not a property of the data" in convention["why_this_is_declared_and_not_slipped_in"]
+    assert cds.CDS_VARIABLES["vo"] == "vorticity"
+
+
+def test_the_acquisition_window_stops_before_the_forecast_test_period():
+    """Not acquiring 2022-2023 makes the reservation physical rather than a matter of policy."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+
+    assert design["the_request"]["date_end"] == "2021-12-31"
+    why = design["why_the_window_stops_at_2021"]
+    assert "cannot be opened by accident" in why["the_reason"]
+    assert "second request with its own queue time" in why["what_that_costs"]
+
+
+def test_the_acquisition_declares_what_would_make_the_record_adequate():
+    """The question T4E.17 never asked, asked in advance this time."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    acceptance = design["acceptance_for_the_acquired_record"]
+
+    assert "was never checked for whether the record's variable could SEE" in (
+        acceptance["why_acceptance_is_declared_before_the_data_arrives"])
+    assert "153.9 km" in acceptance["condition_1_the_join_must_close"]
+    assert "cardinality 3" in acceptance["condition_2_a_configuration_must_exist"]
+    assert "as unusable as one yielding none" in (
+        acceptance["condition_3_the_extractor_must_not_be_swamped"])
+    assert "MSLP" in acceptance["what_failure_would_mean"]
+
+
+def test_credentials_are_the_maintainers_and_are_never_recorded():
+    """The layer builds a standard client; the key belongs to the maintainer and to no file here."""
+    import json
+    from pathlib import Path
+
+    design = json.loads(Path(
+        "data/identity_calibration/t4e18-vorticity-acquisition-design.json"
+    ).read_text(encoding="utf-8"))
+    prerequisites = design["operational_prerequisites_the_maintainer_must_supply"]
+
+    assert "never to be pasted into this conversation" in prerequisites["credentials"]
+    assert "allow_network" in prerequisites["network_consent"]
+    assert not list(Path("data/identity_calibration").glob("*cdsapirc*"))
+
+
+# ---------------- The vorticity probe: the variable works, the crop does not
+
+
+def _t4e18_probe():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(
+        "measurements/t4e18_vorticity_probe.json").read_text(encoding="utf-8"))
+
+
+def test_the_variable_was_confirmed_before_the_full_request_was_spent():
+    """A cyclone is the most cyclonic 0.02 per cent of its frame, one cell from the catalogue."""
+    works = _t4e18_probe()["the_variable_works"]
+
+    assert works["verdict"].startswith("CONFIRMED")
+    assert works["gita_2018_02_13_12"]["percentile_of_frame"] == 0.02
+    assert works["gita_2018_02_13_12"]["distance_from_storm_to_frame_minimum_cells"] == 1
+    assert "sign convention declared before acquisition is correct" in works["reading"]
+
+
+def test_the_probe_failed_for_the_crop_and_the_record_says_which():
+    """77 per cent of the cyclone population is north of the crop, and the rest is at its edge."""
+    failure = _t4e18_probe()["but_the_join_still_fails_and_the_reason_is_the_crop"]
+
+    assert failure["storms_with_a_feature_inside_their_catalogue_radius"] == "0 of 4"
+    assert "707 lie NORTH of -20" in failure["the_crop_is_wrong_for_this_purpose"]
+    assert "outside_valid_interior" in failure["the_cause"]
+
+
+def test_the_trade_off_is_recorded_and_not_resolved():
+    """Moving north buys 30 storms and costs the kind label. Picking the flattering box is the
+    horse race every declaration in this sequence forbids.
+    """
+    alternative = _t4e18_probe()["the_alternative_and_its_cost"]
+
+    boxes = {b["lat"]: b for b in alternative["candidate_boxes"]}
+    assert boxes["-60..-20 (current)"]["nature_base_rate"] == 0.571
+    assert boxes["-45..-5"]["nature_base_rate"] == 0.872
+    assert boxes["-45..-5"]["storms"] == 30
+    assert "close to degenerate" in alternative["THE_KIND_LABEL_DEGRADES"]
+    assert "horse race" in alternative["this_is_a_decision_and_not_an_optimisation"]
+
+
+def test_changing_the_crop_would_void_the_signature_already_given():
+    """T4E.17 was signed on terms naming this crop and a base rate of 0.571."""
+    probe = _t4e18_probe()
+
+    assert "would have to be re-given" in probe["what_this_costs_the_signed_catalogue"]
+    refused = " ".join(probe["what_was_NOT_done"])
+    assert "full 2018-2021 acquisition was not run" in refused
+    assert "No frame of the 2022-2023 forecast-test period" in refused
+
+
+# ---------------- The acquired record, and the acceptance it failed
+
+
+def _t4e18_acceptance():
+    import json
+    from pathlib import Path
+
+    return json.loads(Path("measurements/t4e18_acceptance.json").read_text(encoding="utf-8"))
+
+
+def test_the_acceptance_failed_on_conditions_declared_before_the_data_existed():
+    """2 of 18 and 1 of 18 against a bar of 9. Declared in advance, so it is a result."""
+    conditions = _t4e18_acceptance()["conditions_as_declared_before_the_data_existed"]
+
+    assert "MET BY 2 OF 18" in conditions["condition_1"]
+    assert "MET BY 1 OF 18" in conditions["condition_2"]
+    assert conditions["condition_3"].startswith("features per frame usable -- MET")
+
+
+def test_the_variable_is_cleared_and_so_are_the_crop_and_the_representation():
+    """The signal is present, correctly signed, and nothing extracted it."""
+    established = _t4e18_acceptance()["what_is_established_and_is_not_in_doubt"]
+
+    assert "0.02nd percentile" in established["the_variable_carries_the_signal"]
+    assert "sampling artefact" in established["the_crop_is_no_longer_the_problem"]
+    assert "3 to 7 features per frame" in established["the_representation_is_not_the_problem_either"]
+
+
+def test_the_diagnosis_names_the_extractors_calibration():
+    """Phase randomisation preserves the spectrum, so the surrogate maxima match the field's."""
+    points_at = _t4e18_acceptance()["what_this_points_at"]
+
+    assert "306.74 K against a field maximum of 302.5 K" in points_at["the_extractor_s_calibration"]
+    assert "second registered extractor" in points_at["the_extractor_s_declared_assumption"]
+    assert "property of the instrument" in points_at["the_finding"]
+
+
+def test_the_failure_does_not_condemn_the_variable_or_authorise_a_rewrite():
+    """A second extractor is untested and would be its own declared work."""
+    record = _t4e18_acceptance()
+
+    refused = " ".join(record["what_this_does_NOT_establish"])
+    assert "Not that relative vorticity is the wrong variable" in refused
+    assert "Not that the acquisition was wasted" in refused
+    assert "Not that a second extractor would succeed" in refused
+    assert "neither is authorised by this measurement" in record["what_would_be_needed_next"]
+
+
+# ---------------- The diagnosis was wrong, and the correction is part of the record
+
+
+def test_the_first_diagnosis_was_wrong_and_is_superseded_not_edited_away():
+    """It claimed the calibration rejects the cyclone. Measurement says it clears by six-fold."""
+    correction = _t4e18_acceptance()["CORRECTION_2026_09_10"]
+
+    assert "BOTH CLAIMS ARE WRONG" in correction["what_was_wrong"]
+    assert "generalised to vorticity without measuring it" in correction["how_the_error_was_made"]
+    assert "11 of 18 are ACCEPTED" in correction["the_calibration_actually_clears_comfortably"]
+
+
+def test_four_of_five_surrogate_methods_have_no_power_against_a_frame_maximum():
+    """They preserve the marginal, so the surrogate maximum equals the observation's.
+
+    Worth pinning before any of them is proposed as a replacement null.
+    """
+    import numpy as np
+
+    from src.statistics import surrogates
+
+    rng = np.random.default_rng(3)
+    field = rng.normal(0.0, 1.0, (48, 48))
+    field[24, 24] += 30.0
+    for method in ("aaft", "iaaft", "circular_shift"):
+        member = np.asarray(surrogates.generate(field, method=method, n=1, seed=5)["members"][0])
+        assert abs(float(member.max()) - float(field.max())) < 1e-9, method
+    spectral = np.asarray(
+        surrogates.generate(field, method="phase_randomise", n=1, seed=5)["members"][0])
+    assert float(spectral.max()) != float(field.max())
+
+
+def test_the_two_real_failure_modes_are_named_with_their_numbers():
+    """The dateline edge, and a one-to-two-cell offset. Neither is the calibration."""
+    modes = _t4e18_acceptance()["CORRECTION_2026_09_10"]["the_two_real_failure_modes"]
+
+    assert "179.0 to 179.8" in modes["the_dateline_edge"]
+    assert "refuses dateline-crossing requests by design" in modes["the_dateline_edge"]
+    assert "factor of two to three, not the order of magnitude" in (
+        modes["a_systematic_positional_offset"])
+
+
+def test_raw_extraction_beats_the_swt_planes_for_this_purpose():
+    """The reverse of what a four-storm comparison suggested, and measured across eighteen."""
+    shows = _t4e18_acceptance()["CORRECTION_2026_09_10"]["what_the_measurement_actually_shows"]
+
+    assert shows["raw_field_extraction"]["nearest_km_median"] == 52.1
+    assert shows["swt_plane_extraction"]["nearest_km_median"] == 127.1
+    assert "markedly BETTER" in shows["reading"]
+    assert "Acceptance still fails either way" in shows["reading"]
+
+
+# ---------------- T4E.19: the offset decomposed, with the declared negative result intact
+
+
+def _t4e19():
+    import json
+    from pathlib import Path
+
+    return json.loads(
+        Path("measurements/t4e19_positional_error.json").read_text(encoding="utf-8"))
+
+
+def test_the_declared_answer_is_that_the_causes_are_not_separated():
+    """Condition 3 anticipated this and required it to be reported rather than resolved."""
+    record = _t4e19()
+
+    assert record["VERDICT"].startswith("NONE OF THE THREE DECLARED CAUSES IS ESTABLISHED")
+    assert "rather than resolved by picking the most plausible" in record["VERDICT"]
+
+
+def test_the_catalogue_uncertainty_cause_is_ruled_out_by_its_own_prediction():
+    """It predicted the offset would track the agencies' disagreement. It does not.
+
+    That was the outcome that would have needed no code at all, so ruling it out costs
+    something and is worth stating precisely.
+    """
+    cause = _t4e19()["prediction_tests"]["cause_B_catalogue_uncertainty"]
+
+    assert "+0.020" in cause["measured"]
+    assert "RULED OUT" in cause["reading"]
+    assert "not a case of comparing at the wrong tolerance" in cause["reading"]
+
+
+def test_the_physical_cause_fails_its_sharpest_test():
+    """Storm type. A transitioning system offsets like a tropical one to within 3.5 km."""
+    cause = _t4e19()["prediction_tests"]["cause_C_a_real_physical_offset"]
+
+    assert "ET 36.2 km" in cause["measured_by_storm_type"]
+    assert "OPPOSITE SIGN to the prediction" in cause["measured_latitude"]
+    assert cause["reading"].startswith("NOT SUPPORTED")
+
+
+def test_the_surviving_cause_is_reported_as_too_weak_to_carry_the_explanation():
+    """Sign only. About 2 per cent of the variance is not a cause."""
+    cause = _t4e19()["prediction_tests"]["cause_A_estimator_bias"]
+
+    assert "+0.143" in cause["measured"]
+    assert "nowhere near enough to call it the cause" in cause["reading"]
+
+
+def test_the_post_hoc_pattern_is_fenced_off_from_the_declared_result():
+    """It was noticed in the data that would have to test it, so it is a hypothesis, not a finding."""
+    post = _t4e19()["post_hoc_and_NOT_adjudicated"]
+
+    assert "cannot be claimed from this measurement" in post["why_this_is_fenced_off"]
+    assert "0.76 cells" in post["what_was_seen"]
+    assert "Not a fixed coordinate shift" in post["what_it_is_not"]
+    assert "none of it is authorised here" in post["what_would_test_it"]
+
+
+def test_the_unit_of_independence_is_the_storm_not_the_observation():
+    """154 observations, 16 storms, and every interval is leave-one-storm-out."""
+    record = _t4e19()
+
+    assert record["population"]["core_excluding_dateline"] == 154
+    assert record["population"]["core_storms"] == 16
+    assert "The unit of independence is the storm: 16, not 154" in (
+        record["prediction_tests"]["note"])
+
+
+# ---------------- T4E.20: the synthetic centre test, and the gate that failed by its own rule
+
+
+def _t4e20():
+    import json
+    from pathlib import Path
+
+    return json.loads(
+        Path("measurements/t4e20_synthetic_centre.json").read_text(encoding="utf-8"))
+
+
+def test_the_gate_failed_by_the_declared_criterion_and_the_code_said_otherwise():
+    """The declaration disqualified a background yielding 'hundreds, OR NONE'. It yields none.
+
+    The coded check tested only an upper bound. Recording the mismatch is the point: a validity
+    gate whose code does not match its declaration is not a gate.
+    """
+    correction = _t4e20()["GATE_CORRECTION"]
+
+    assert "never implemented the 'or none' half" in correction["what_happened"]
+    assert "EASIER than the real one" in correction["why_it_matters"]
+    assert "Toward the conclusion, not away from it" in correction["which_way_it_cuts"]
+
+
+def test_the_directional_prediction_is_confirmed_monotonically():
+    """45 degrees at symmetry, 19 at 2.5x stretch. Declared before the measurement."""
+    results = _t4e20()["results"]["cause_A_directional_prediction_CONFIRMED"]
+
+    assert "45.3 degrees" in results["stretch_1.0"]
+    assert "18.9 degrees" in results["stretch_2.5"]
+    assert "toward the broader side" in results["reading"]
+
+
+def test_the_estimator_sizes_correctly_while_mislocating():
+    """A centroid problem, not a scale one -- which rules out the diverged-scale defect."""
+    scale = _t4e20()["results"]["scale_itself_is_recovered_accurately"]
+
+    assert scale["planted_vs_recovered"]["9.00"] == 8.93
+    assert "centroid problem, not a sizing one" in scale["reading"]
+
+
+def test_the_quantitative_claim_is_refused_while_the_mechanism_is_kept():
+    """10.2 km synthetic against 33.8 real, with a failed gate between them."""
+    record = _t4e20()
+
+    assert "DEMONSTRATED as a real mechanism" in record["VERDICT"]
+    assert "NOT established that this accounts for all" in record["VERDICT"]
+    refused = " ".join(record["what_this_does_not_settle"])
+    assert "10.2 km against 33.8 observed" in refused
+    assert "That the extractor should be changed" in refused
+    assert "cannot see a fixed geographic bearing" in refused

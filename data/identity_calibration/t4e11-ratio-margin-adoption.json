@@ -1,0 +1,40 @@
+{
+  "schema": "t4e11-adoption/v1",
+  "adopts": "data/identity_calibration/t4e11-ratio-margin-declaration.json",
+  "adopts_sha256": "b2ba2b4ed70cc3839031c345d4ff467f43912e74a81a9573d4f609b907193d58",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-09",
+  "what_was_adopted": "The preregistration is in force. Candidate D -- candidate C's mutual nearest-neighbour rule narrowed by a dimensionless margin at tau = 0.8 -- is the declared next attempt at an identity criterion that survives a change of partition. The declaration was written, committed and hashed before any development block was evaluated under it.",
+  "what_adoption_does_not_mean": "It is not a prediction that D will work. It says only that D is a scientifically defensible candidate worth measuring and that the conditions for calling it a success or a failure were fixed before the measurement. If it fails it is to be recorded as failed.",
+  "what_was_not_adopted": "D is NOT adopted as the identity criterion. Adoption authorises the development evaluation on the four already-inspected blocks and the null block, and nothing further. The reserved confirmatory blocks stay reserved until development evidence supports proceeding and a further amendment records that.",
+  "tau_is_not_adjustable_by_this_adoption": "tau stays at 0.8, the value the declaration pinned from Lowe (2004). Adoption does not license trying other values and keeping the best; a tau chosen by looking at these blocks would be fitted to already-inspected data. Such a value is a candidate E and would need its own declaration, its own adoption, and an evaluation on data these blocks did not select.",
+  "scope_adopted": "Atmospheric identity path only. Adopting D here adopts it nowhere else. Cross-domain use of the same mechanism requires its own declared experiment under the cross-domain programme and its own qualification, per R19.",
+  "governing": [
+    "R20: candidate D is evaluated alone. It is not compared against B or C to pick a winner. Candidate C is recomputed on the null blocks solely as the denominator of the declared retention statistic, which is arithmetic and not adjudication.",
+    "Development results on the four inspected blocks are development evidence and may not be reported as confirmation."
+  ],
+  "development_outcome": {
+    "status": "FALSIFIED_ON_DEVELOPMENT_EVIDENCE",
+    "measured_on": "2026-09-09",
+    "false_split_range_across_four_blocks": [
+      0.0,
+      0.0
+    ],
+    "false_admission_range_across_four_blocks": [
+      0.7761,
+      0.8256
+    ],
+    "null_retention": 0.5345,
+    "null_matches_returned": 62,
+    "null_matches_returned_by_candidate_C": 116,
+    "scene_pairs_refused_for_undefined_margin": 0,
+    "summary": "The margin cost nothing in recall -- false split stayed at 0.0000 in all four blocks, so every construction-labelled motif pair survives it -- and it removed roughly forty per cent of the matches on the planted blocks and forty-six per cent on the null. Acceptance required at least ninety per cent removal on the null. It removed 54 of 116, keeping 62 matches where the correct answer is none.",
+    "which_acceptance_condition_failed": "development_rejection, and only that one. development_recall passed at its bound with room to spare, and both quantities were stable across the four blocks. The failure is a single named condition, not a general collapse.",
+    "the_structural_prediction_held_exactly": "The declaration derived before measurement that D can only remove pairs C returned, so the false split could only rise from 0.0000 and the match count could only fall. The split did not rise at all and the counts fell on every block. Both directions are as predicted, which is worth recording because it means the trade was measured cleanly: what the margin discarded was entirely non-motif.",
+    "what_this_establishes": "That the nearest/second-nearest contrast carries real information on this signature and carries it stably. Motif ratios run from 0.020 to 0.293 across the four blocks; non-motif ratios run up to 0.9997 and the null block's run from 0.240 to 0.996. The contrast is informative and tau = 0.8 is far too permissive for it. But a value being wrong is not the same as there being a right one -- see the overlap below.",
+    "the_declared_diagnostic_and_what_it_may_not_be_used_for": "The declaration anticipated this exact question: does a failure mean the two ratio distributions overlap, or merely that tau was badly placed? THEY OVERLAP. The largest motif ratio observed is 0.293 and the smallest ratio the null block produces is 0.240, so no threshold separates them cleanly. The overlap is narrow, which is precisely what makes it dangerous: a tau chosen to sit inside it would be fitted to blocks that have now been inspected four times over, and the declaration forbids reporting such a value as an operating point. That is a candidate E, needing its own declaration, its own adoption, and an evaluation on data these blocks did not select.",
+    "a_limitation_of_this_measurement_that_is_not_a_result": "Retention was measured against a single null partition, because only one is declared. Its stability across null partitions is therefore untested, and the range reported for it is one number rather than a range. The diagnostic ranges also record extremes rather than distributions, so the MASS of the overlap is unquantified -- how many motif pairs sit above 0.240 is not known from this run. Quantifying it is a design question for whatever comes next, not an omission to be filled in by re-reading these blocks.",
+    "what_this_does_not_authorise": "Moving tau. Adding a second rejection test to D and re-measuring. Reading an operating point off the diagnostic. Each of those is a fresh candidate needing its own declaration and adoption under R20. The reserved confirmatory blocks remain reserved; four falsifications have not unreserved them.",
+    "the_declaration_diagnosed_its_own_failure_correctly_this_time": "This is worth recording because the two preceding declarations did not. Candidate B predicted that failure would show the shape moving rather than the scale, and it did not; candidate C predicted that failure would implicate the signature, and it did not. Candidate D's field was narrowed deliberately in response to that pattern, to license only that at tau = 0.8 this contrast does not separate recurrence from coincidence in these scenes -- and that is exactly and only what the measurement supports. The narrowing was the right correction."
+  }
+}

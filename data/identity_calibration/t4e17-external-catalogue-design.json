@@ -1,0 +1,159 @@
+{
+  "schema": "t4e17-external-catalogue-design/v1",
+  "status": "AMENDED_FOR_THE_T4E18_CROP_AND_RE_SIGNED",
+  "task": "T4E.17",
+  "artefact": "the external reference catalogue kind_recurrence has always required",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed, adopted and SIGNED it. Code does not sign catalogues for a person.",
+  "declared_on": "2026-09-10",
+  "why_this_exists": "kind_recurrence is the primary scientific target and the only identity target whose admissible evidence is external_reference alone -- 'a signed, frozen catalogue matched at its own declared radius'. Every measurement in this programme to date has been on record-derived proxies or on synthetic scenes, so the target has never been evaluable from the tool. Seven criteria were declared and measured on synthetic partitions and an eighth was withdrawn; none of that touched this. The network access needed to obtain a catalogue was granted by the maintainer on 2026-09-10 and used for this and nothing else.",
+  "the_catalogue": {
+    "name": "International Best Track Archive for Climate Stewardship (IBTrACS), Project Version 4.01, South Pacific basin subset",
+    "publisher": "NOAA National Centers for Environmental Information",
+    "doi": "10.25921/82ty-9e16",
+    "citation_required_by_the_publisher": [
+      "Gahtan, Jennifer; Knapp, Kenneth R.; Schreck, Carl J.; Diamond, Howard J.; Kossin, James P.; Kruk, Michael C. (2024). International Best Track Archive for Climate Stewardship (IBTrACS) Project, Version 4.01. NOAA National Centers for Environmental Information. https://doi.org/10.25921/82ty-9e16",
+      "Knapp, K. R., M. C. Kruk, D. H. Levinson, H. J. Diamond, and C. J. Neumann (2010): The International Best Track Archive for Climate Stewardship (IBTrACS): Unifying tropical cyclone best track data. Bulletin of the American Meteorological Society, 91, 363-376."
+    ],
+    "source_url": "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.SP.list.v04r01.csv",
+    "retrieved_on": "2026-09-10",
+    "sha256": "631f76b95c77a6a4e409233466a0d501bb4848324e421fc58e228efea2086c44",
+    "bytes": 35482417,
+    "licence_position": "NCEI states full and open access for scientific research; WMO Resolution 40 governs commercial use. This programme is a personal, non-commercial experiment on public data, so the open-access terms apply and the citation requirement above is the binding obligation.",
+    "the_file_is_NOT_committed": "35.5 MB of third-party data does not belong in this repository. It is bound by the sha256 above, exactly as the acquired record is bound by its content hash and market records are never committed. Any re-download must reproduce that digest or the evaluation is invalid and must say so."
+  },
+  "why_this_catalogue_is_admissible_as_external_reference": {
+    "the_requirement": "EvidenceClass external_reference declares independent_of_record=True: 'Labels from a reviewed catalogue supplied from outside this record.' A catalogue derived from the same reanalysis the record comes from would be circular, and a definition validated against it would be validated against itself.",
+    "why_most_atmospheric_catalogues_FAIL_that_test": "Blocking indices, cyclone-track intercomparisons such as IMILAST, and most atmospheric-river catalogues are computed FROM reanalysis. Against an ERA5 record they are record-derived proxies wearing a catalogue's name, and admitting one would reintroduce exactly the circularity this evidence class exists to exclude.",
+    "why_IBTrACS_passes": "IBTrACS merges operational best-track data produced by meteorological agencies -- Australia's Bureau of Meteorology, the Japan Meteorological Agency, NOAA's National Hurricane Center, the Shanghai Typhoon Institute and others -- from satellite, aircraft and surface observation, together with historical archives. It is not a reanalysis product. Its identities are assigned by human forecasters and post-season review at the agencies, not by any algorithm run over ERA5.",
+    "the_residual_dependence_that_must_be_disclosed": "Best-track analysts use whatever guidance was available operationally, which can include model fields. The labels are therefore independent of THIS record and of ERA5 as reprocessed here, but they are not independent of numerical weather prediction in general. That is a weaker independence than a purely observational catalogue would give, and it is stated rather than assumed."
+  },
+  "the_matching_domain": {
+    "spatial": "The record's own crop: latitude -60 to -20, longitude 140 to 180. 161x161 at 0.25 degrees, 850 hPa.",
+    "temporal": "The record runs 2018-01-01 to 2023-12-31, 8,764 frames, four frames a day. IBTrACS reports at synoptic hours, so only observations at 00, 06, 12 and 18 UTC are used and no interpolation is performed in either direction.",
+    "the_development_window_is_2018_2021_ONLY": "2022-2023 is the forecast-test period and is closed by standing constraint. No frame of it is opened by this design, and the evaluation stops at 2021-12-31.",
+    "what_was_counted_in_the_reserved_period_and_why_that_is_disclosed": "The catalogue lists 393 in-box observations from 13 distinct storms in 2022-2023. That number was computed from the CATALOGUE, not from the record: no ERA5 frame of the forecast-test period was opened, and none may be. It is disclosed because it was seen, and because it is what a confirmatory evaluation would later have to work with if the maintainer ever opened that period -- which this design does not request and does not authorise."
+  },
+  "the_population_and_the_unit_of_independence": {
+    "measured_from_the_catalogue_before_this_declaration_was_written": "210 in-box observations at synoptic hours in 2018-2021, from 20 distinct storms: 8 in 2018, 4 in 2019, 2 in 2020 and 6 in 2021.",
+    "the_pairs_that_bear_on_kind_recurrence": "20,241 cross-storm pairs. Pairs of observations FROM THE SAME STORM are excluded by construction: those bear on spatial_persistence, which is a different declared target with different admissible evidence, and counting them here would answer the easier question and report it as the harder one.",
+    "THE_UNIT_OF_INDEPENDENCE_IS_THE_STORM_NOT_THE_OBSERVATION": "There are 20,241 pairs but only 20 storms. Observations along one track are strongly correlated -- successive six-hourly positions of the same cyclone -- so any interval computed as though 20,241 pairs were independent would be wrong by roughly the square root of the clustering factor. Every rate this evaluation reports must be accompanied by a storm-clustered interval, and the effective sample size is nearer 20 than 20,241. This is stated first because it is the single easiest way for a result here to be overclaimed.",
+    "why_20_storms_is_still_worth_evaluating": "It is 20 more than the target has ever had. The alternative is not a larger external catalogue; it is continuing to report that kind_recurrence is unevaluable."
+  },
+  "the_kind_label": {
+    "primary": "NATURE, the catalogue's own storm-type classification: TS tropical, SS subtropical, ET extratropical, DS disturbance, NR not reported, MX mixed reports between agencies.",
+    "why_NATURE_and_not_intensity": "kind_recurrence asks about recurrence of the same physical KIND in a different constellation. NATURE is a classification of what the system IS. USA_SSHS is the Saffir-Simpson category, which is an intensity ordinal, and two storms of equal intensity need not be the same kind of system.",
+    "base_rate_measured_before_declaring": "Same-kind by NATURE is 7,907 of 20,241 cross-storm pairs, a base rate of 0.391. By USA_SSHS it is 3,679 of 20,241, a base rate of 0.182.",
+    "why_that_base_rate_matters_more_than_it_looks": "The synthetic partitions posed prior odds of 1:399, and a 36-fold specificity shortfall that no threshold could close dominated seven candidates. Here the prior odds are about 1:1.6 on NATURE and 1:4.5 on USA_SSHS. The specificity problem that governed the synthetic sequence is substantially a property of that design and not of the identity question, and any criterion evaluated here must be read in that light rather than compared directly to the synthetic rates.",
+    "USA_SSHS_is_a_declared_secondary_characterisation_and_adjudicates_nothing": "It is recorded alongside NATURE because intensity class is the other reading of 'kind' a reviewer might expect, and reporting only the more favourable of the two after seeing both would be a horse race. NATURE is the adjudicating label and is fixed here, before any signature is computed.",
+    "MX_and_NR_are_refusals_not_classes": "MX means agencies disagreed and NR means nature was not reported. A pair involving either is REFUSED BY NAME and contributes to neither rate. Treating disagreement as a class would let the catalogue's own uncertainty enter as ground truth."
+  },
+  "the_catalogue_s_own_declared_radius": {
+    "requirement": "external_reference evidence is 'matched at its own declared radius' -- the catalogue fixes the tolerance, not the criterion under test.",
+    "position": "Best-track positions carry agency-dependent uncertainty, typically tens of kilometres, and IBTrACS records the contributing agency per observation. The matching radius must be taken from the catalogue's own reported uncertainty for the contributing agency and NOT chosen to make a result work. Where an agency reports none, the observation is refused rather than assigned a default.",
+    "time": "Exact synoptic-hour equality only. No temporal tolerance, because the record already provides all four synoptic hours and a tolerance would be a free parameter."
+  },
+  "what_this_design_does_and_does_not_settle": {
+    "what_it_makes_possible": "For the first time, kind_recurrence becomes evaluable from the tool against labels that are not derived from the record under test.",
+    "what_it_does_NOT_do": [
+      "It evaluates no criterion. No identity rule is declared, adopted or measured by this design, and a criterion for this evidence needs its own declaration written before these numbers shape it.",
+      "It says nothing about any of the seven synthetic candidates. Their results stand as they are and none of them transfers here.",
+      "It covers the South Pacific basin inside one 40-degree box over four years, from 20 storms. It is not a global result, not a climatological one, and not a statement about any other basin.",
+      "It does not approve a mining radius, discharge T4E.8's acquired-record acceptance, or close D96, D97, D98, D99 or D100.",
+      "It does not open the 2022-2023 forecast-test period, and adopting it does not."
+    ],
+    "the_honest_ceiling": "Twenty storms, one basin, one box, four years, and a coarse six-value kind label of which two values are refusals. A criterion that succeeds here has been shown to work on a small, real, externally-labelled population. That is a categorically different kind of evidence from anything this programme has produced, and it is still a small one."
+  },
+  "governing_rules": [
+    "Nothing reaches the network without the maintainer's explicit say-so. It was given on 2026-09-10 and used for this catalogue and nothing else.",
+    "Code does not sign catalogues, events or scientific preregistrations for a person. This file is a proposal until the maintainer signs it.",
+    "Bind the record by its content identity; do not commit the data. The catalogue is bound by sha256 and is not in this repository.",
+    "A named refusal is preferable to an unsupported number. MX, NR and observations without a reported position uncertainty are refused and counted.",
+    "Already inspected data do not become untouched by renaming them. The 2018-2021 catalogue window has now been inspected and is development evidence.",
+    "R19: this evidence is atmospheric. Cross-domain use of anything built on it requires its own declared experiment."
+  ],
+  "claim_boundary": "The catalogue supplies identity; it does not supply physics. Labels are the contributing agencies' operational judgements, reviewed post-season, and a criterion agreeing with them has agreed with those judgements and not with the atmosphere. No frame of the 2022-2023 forecast-test period is opened by any part of this.",
+  "amendment_2026_09_10_the_radius_had_no_source": {
+    "why_this_amendment_exists": "The design said the matching radius must be taken from 'the catalogue's own reported uncertainty for the contributing agency'. That was checked before asking the maintainer to sign, and it is WRONG: IBTrACS has 174 columns and none of them reports position uncertainty. The requirement as written could not have been implemented, and signing it would have committed the maintainer to a design whose central matching parameter had no legitimate source.",
+    "what_replaces_it": "Independent agencies report their own position for the same observation, and their disagreement is the catalogue's own per-observation statement of positional confidence. The radius for an observation is the greatest distance from the catalogue's reported position to any contributing agency's position. It is supplied by the catalogue and chosen by nobody.",
+    "the_agencies_present_in_this_basin_and_window": {
+      "USA": 186,
+      "BOM": 102,
+      "WELLINGTON": 83,
+      "NADI": 67
+    },
+    "coverage": "Of 210 in-box synoptic observations, 176 have two or more agencies reporting and 34 have only one.",
+    "the_34_are_REFUSED_BY_NAME": "A single-agency observation has no inter-agency spread, so the catalogue supplies no radius for it. It is refused and counted, not given a default. This follows the rule the design already stated for the case where no uncertainty is reported, and it is the reason that rule was written.",
+    "the_measured_radius": {
+      "definition": "max distance from the IBTrACS position to any contributing agency position, per observation",
+      "median_km": 15.2,
+      "q90_km": 47.2,
+      "q95_km": 89.4,
+      "max_km": 145.2,
+      "mean_km": 24.7,
+      "the_record_grid_cell_for_comparison": "0.25 degrees is 21.3 km in longitude and 27.8 km in latitude at 40 degrees south",
+      "reading": "The median radius is BELOW one grid cell of the record, so matching is tight at grid scale for half the observations. The upper tail is not: q95 is about four cells and the largest is about six. The radius therefore varies per observation and must be carried per observation rather than summarised, which is what 'matched at its own declared radius' requires anyway."
+    }
+  },
+  "amendment_2026_09_10_the_population_and_base_rates_are_revised": {
+    "why": "Refusing the 34 single-agency observations changes the population, and applying the design's own MX/NR refusal changes the NATURE base rate. The original figures were computed before either refusal was applied and are superseded here rather than edited out.",
+    "superseded_figures": {
+      "observations": 210,
+      "storms": 20,
+      "cross_storm_pairs": 20241,
+      "nature_base_rate": 0.391,
+      "usa_sshs_base_rate": 0.182
+    },
+    "revised_figures": {
+      "observations": 176,
+      "storms": 18,
+      "nature_cross_storm_pairs": 10721,
+      "nature_same_kind": 6119,
+      "nature_base_rate": 0.571,
+      "usa_sshs_cross_storm_pairs": 14081,
+      "usa_sshs_same_kind": 3203,
+      "usa_sshs_base_rate": 0.227
+    },
+    "THE_CHANGE_THAT_MATTERS": "The NATURE base rate is 0.571, not 0.391. Once MX and NR are refused as the design requires, same-kind pairs are the MAJORITY. A rule that answered 'same kind' to everything would be right 57.1% of the time, so accuracy is a meaningless summary here and only the two-sided error rates -- false split and false admission -- may be reported. That was already this programme's practice and is now also a necessity.",
+    "NATURE_REMAINS_THE_ADJUDICATING_LABEL": "USA_SSHS has the more favourable base rate of 0.227 and would make a criterion look better. Switching to it now, having seen both, would be exactly the horse race the design forbids. NATURE was chosen on the principle that kind_recurrence asks what a system IS rather than how strong it is, and that principle is unchanged by the revised numbers.",
+    "the_effective_sample_size_is_now_18": "Eighteen storms, not twenty, and still not 10,721. The unit of independence is unchanged and the clustering requirement stands."
+  },
+  "what_this_check_cost_and_saved": "It cost one verification pass before signature. It saved the maintainer from signing a design whose matching radius had no source, and it corrected a base rate that was wrong by 0.18 in the direction that would have made any later result look better than it was.",
+  "amendment_2026_09_10_the_domain_moved": {
+    "why": "This design named the record's own crop, latitude -60 to -20. T4E.18's probe showed that crop cannot support the evaluation: 707 of 917 South Pacific cyclone observations in the longitude band lie north of it, and the remainder cluster against its northern edge where the extractor refuses features. The maintainer chose to move the crop, so the evidence base changes and this design changes with it.",
+    "the_new_domain": "latitude -58 to -18, longitude 140 to 180, 161 x 161 at 0.25 degrees -- the assessed shape, shifted two degrees north.",
+    "why_exactly_minus_18": "A rule stated from the label distribution before any criterion runs: extend north only while the informative minority of the kind label keeps growing, and stop where it saturates. Interior SS counts run 37, 38, 39 as the edge moves -20, -19, -18 and then never move again out to -10; ET stays at 5 and the non-TS storm count at 9. Everything north of -18 is TS, which dilutes the label and adds nothing informative.",
+    "superseded_population": {
+      "observations": 176,
+      "storms": 18,
+      "cross_storm_pairs": 10721,
+      "nature_base_rate": 0.571,
+      "domain": "lat -60..-20"
+    },
+    "revised_population": {
+      "domain": "lat -58..-18",
+      "in_box": 293,
+      "refused_single_agency": 41,
+      "with_a_catalogue_radius": 252,
+      "storms": 21,
+      "radius_km": {
+        "median": 15.3,
+        "q90": 42.1,
+        "q95": 74.4,
+        "max": 145.2
+      },
+      "whole_box_nature_base_rate": 0.668,
+      "interior_observations": 176,
+      "interior_storms": 18,
+      "interior_cross_storm_pairs": 10721,
+      "interior_nature_base_rate": 0.571,
+      "non_ts": {
+        "SS": 39,
+        "ET": 5,
+        "storms": 9
+      }
+    },
+    "the_two_populations_must_not_be_confused": "The whole box holds 252 observations with a radius at a NATURE base rate of 0.668. The INTERIOR -- at least two degrees from the northern and southern edges, which is where a feature can be extracted at all -- holds 176 from 18 storms at 0.571. Every rate reported against this evidence must say which population it is over, and the interior is the one an identity criterion can actually use.",
+    "a_coincidence_that_could_mislead": "The new interior population is 176 observations from 18 storms at base rate 0.571, which are the same three numbers the OLD whole-box population carried. They are different populations that happen to coincide, not a quantity that stayed put, and anyone reading the two designs together should not take the match as continuity.",
+    "what_did_not_change": "The catalogue itself, its digest, its independence, its citation obligation, the per-observation radius rule, the adjudicating label NATURE, the MX/NR refusals, and the exclusion of the 2022-2023 forecast-test period."
+  }
+}

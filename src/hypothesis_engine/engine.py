@@ -345,6 +345,16 @@ class PatternDiscoveryEngine:
         metric_key: str,
         r: float
     ) -> Dict[str, Any]:
+        """Propose the parameter range that made the metric better. **This is not a test.**
+
+        The direction is chosen so as to improve `metric_key`, so no outcome of the proposed
+        sweep would retract the correlation that prompted it. That is a useful thing to run and
+        it is an optimisation, not a replication, and it must not be reported as one.
+
+        `src/analysis_engine/spectral_proposals.py` (T4F.8) proposes the other kind: a re-test
+        on ground the finding was not made on, carrying a prediction registered in advance and a
+        named condition that would retract it.
+        """
         is_error = any(em in metric_key.lower() for em in ["error", "mse", "rmse", "mae", "leakage", "shift", "bias"])
         want_larger = (is_error and r < 0) or (not is_error and r > 0)
         
@@ -395,6 +405,12 @@ class PatternDiscoveryEngine:
         param_key: str,
         best_category: str
     ) -> Dict[str, Any]:
+        """Fix the best-performing category and re-run. **This is not a test either.**
+
+        The proposed run holds the winning level fixed, so it cannot produce evidence against
+        the group-mean difference that selected it. See `_propose_numerical_followup` above and
+        `src/analysis_engine/spectral_proposals.py` for the refutable kind.
+        """
         orig_config = experiment.config
         new_matrix = {**orig_config.get("parameter_matrix", {})}
         new_matrix[param_key] = [best_category]

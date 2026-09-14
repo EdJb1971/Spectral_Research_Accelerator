@@ -1,0 +1,17 @@
+{
+  "schema": "g17-tess-profile-export/v1",
+  "acquisition_sha256": "b2482879c90089a71cb13640f76fb75ebe5ff1ad5a0ac2e2af5bb6df036862d5",
+  "profile_count": 104,
+  "method_review": {
+    "schema": "g17-marginal-method-review/v1",
+    "declaration_file": "g17_tess_marginal_method_review.json",
+    "declaration_sha256": "3c963f41bc35503813c3a0ed61707ba83e73bb6d3abfdb5b08a1341375085cff",
+    "adoption_file": "g17_tess_marginal_method_review-adoption.json",
+    "adoption_sha256": "e8af684504ee000040ddfa5a1af9fe0fa73bdbadd90e1043fcf26bf29cf21a9f",
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-12"
+  },
+  "record_root": "data/tess_g17_records",
+  "profile_root": "data/profile_collections/g17_tess",
+  "claim_boundary": "Profiles bind adopted single-record marginals. Their existence does not establish admission to any particular pool or exchangeability."
+}

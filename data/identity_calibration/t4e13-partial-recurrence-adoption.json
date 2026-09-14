@@ -1,0 +1,82 @@
+{
+  "schema": "t4e12-adoption/v1",
+  "adopts": "data/identity_calibration/t4e13-partial-recurrence-declaration.json",
+  "adopts_sha256": "55631fa2df03cda7e1d62304abebc362582e722a4e7177e5fb14cd3a5858b99c",
+  "adopted_by": "Edward Jonathan Bentley, maintainer",
+  "adopted_on": "2026-09-09",
+  "adopted_as": "DEVELOPMENT_EXPERIMENT_ONLY",
+  "what_was_adopted": "The preregistration is in force and candidate 3 may be measured on the already-inspected development blocks and the null, at the three declared richness levels, at k = S - 1. The declared k profile over k in {6, 5, 4, 3} may be measured on the same blocks as characterisation. Nothing else.",
+  "the_confirmatory_blocks_are_not_opened_by_this": "Blocks 720-735 stay reserved and have never been generated. The declaration says in terms that adopting it does not open them, and this adoption does not override that. They are refused in code by STILL_RESERVED_CONFIRMATORY_SEEDS even under confirmatory=True, and spending them needs its own amendment and a separate decision -- which would be worth making only if candidate 3 first meets its conditions here.",
+  "what_adoption_does_not_mean": "It is not a prediction that candidate 3 will work. The declaration predicts the opposite direction on the admission side: coincidental groups are expected to reach S - 1, because a greedy probe already found some and greedy under-counts. Adoption says only that the experiment is worth running and that the conditions for reading it were fixed before it ran.",
+  "what_is_not_adjustable_by_this_adoption": "k stays at S - 1, by the rule 'tolerate exactly one absence'. Raising it back towards S to rescue the admission rate is specifically forbidden by the declaration and is not licensed here; k = S is candidate 2 and is already measured. The mutual nearest-neighbour rule that proposes the pairs, the exact rather than greedy enumeration, the signature, the weights, the cardinality, the richness levels and the scenes are all unchanged, so candidates C, D, 2 and 3 remain counted over one population.",
+  "the_blindness_claim_this_adoption_preserves": "k, the rule fixing it, and every structural choice around it were committed at sha256 55631fa2... before any measurement at any k below the partition size, on any block. That is the property candidate 2 could not have and the reason this candidate exists. It is spent the moment a result at any k below S is read, so it is recorded here, at adoption, while it is still intact.",
+  "what_must_be_reported_as_arithmetic_rather_than_evidence": "Admissions are non-decreasing as k falls, so candidate 3 admits a superset of candidate 2 on every partition and inherits its 0.0000 false split before being run. Acceptance condition 1 is passed by arithmetic and carries no evidential weight. The same monotonicity means the criterion cannot be inert the way candidate 1 was. The entire empirical content of the result is the admission side, and the write-up is to say so in those words.",
+  "the_k_profile_adjudicates_nothing": "It is characterisation of how the criterion degrades as the tolerance widens, which the mining path needs and no measurement so far supplies. R20 forbids the horse race. A k made attractive by the profile is a further candidate requiring its own declaration and its own evidence, and it will NOT be able to claim blindness, because the profile will have been seen. Adopting the profile spends that possibility knowingly.",
+  "scope_adopted": "Atmospheric identity path only. Cross-domain use of the same mechanism requires its own declared experiment and its own qualification, per R19.",
+  "governing": [
+    "R20: candidate 3 is evaluated alone, against its five declared conditions. The k profile adjudicates nothing; candidates C, D and 2 appear only as the proposer of pairs and as arithmetic references, which is not adjudication.",
+    "Development results on the already-inspected blocks are development evidence and may not be reported as confirmation. A blind structural choice does not make inspected blocks fresh.",
+    "A named refusal is preferable to an unsupported number.",
+    "Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which still has no catalogue."
+  ],
+  "development_outcome": {
+    "status": "FALSIFIED. Conditions 3 and 2 both fail; condition 4 holds and condition 1 was arithmetic.",
+    "measured_on": "2026-09-09",
+    "measurement": "measurements/t4e13_candidate_3.json",
+    "k": 5,
+    "partition_size": 6,
+    "condition_3_admission_FAILED": {
+      "bound": 0.1,
+      "false_admission_by_richness": {
+        "6": "0.0000 on all four blocks",
+        "9": "0.0000 on 100-105 and 400-405; 0.4000 on 200-205 and 300-305",
+        "12": "0.4000 on 100-105 and 200-205, 0.4828 on 400-405, 0.8000 on 300-305"
+      },
+      "worst": 0.8,
+      "shortfall_factor_worst": 36.05,
+      "reading": "The bound is 0.10 at every richness individually and is exceeded by four to eight times at richness 9 and 12. The shortfall also WIDENS with richness rather than staying non-increasing, which the same condition forbids separately."
+    },
+    "condition_2_matched_fraction_FAILED": {
+      "requirement": "the matched fraction must FALL as richness grows, on every development block",
+      "block_300_305": [
+        0.05,
+        0.019841,
+        0.022727
+      ],
+      "reading": "It rises from richness 9 to richness 12 on block 300-305. The other three blocks fall as required, so the condition fails on one block of four -- which is a failure, because the condition is stated per block and not as an average."
+    },
+    "condition_4_null_HELD": {
+      "admitted": {
+        "richness_6": 0,
+        "richness_9": 0,
+        "richness_12": 0
+      },
+      "proposed_by_candidate_C": {
+        "richness_6": 116,
+        "richness_9": 595,
+        "richness_12": 1486
+      },
+      "reading": "Where nothing recurs, tolerating one absence still admits nothing, out of 1486 proposed pairs at richness 12. The relaxation did not break the null. This is the one condition that survived and it is worth recording precisely because the candidate failed."
+    },
+    "condition_1_recall_PASSED_BY_ARITHMETIC": {
+      "false_split": "0.0000 on every block at every richness",
+      "reading": "Derived before the run and declared to carry no evidential weight. Admissions are non-decreasing as k falls, so candidate 3 inherits candidate 2's 0.0000 split by monotonicity. This number is NOT a finding and is not to be reported as one."
+    },
+    "condition_5_refusals": {
+      "configurations_refused_as_incomparable": "0 at richness 6 and 9; 1, 1 and 2 on three blocks at richness 12",
+      "reading": "Near-isotropic configurations carry no bearing block and SignatureMetric refuses cross-family comparison. Counted and surfaced rather than silently dropped."
+    },
+    "what_the_result_means": "The prediction the declaration made before the run was correct in direction: coincidental groups DO reach S - 1, and the greedy probe under-counted them. Consistency across the WHOLE partition excludes coincidences; consistency across all but one scene does not. The margin between recurrence and coincidence in these scenes is exactly one scene wide, and candidate 2 was sitting on the only rung that works.",
+    "the_blindness_claim_is_now_spent_and_was_honoured": "k, its rule and every structural choice were committed at sha256 55631fa2... before any measurement at any k below S, and nothing was changed after the numbers appeared. The claim is spent -- it cannot be made again for these scenes -- and what it bought is that this falsification is a real one rather than a criterion that failed to survive its own tuning.",
+    "what_this_falsification_licenses": "Only this: tolerating a single absence, as defined here, admits coincidences that consistency across the whole partition excludes, in these scenes at richness 9 and 12. Nothing at richness 6, where it did not fail.",
+    "what_it_does_NOT_license": [
+      "Not that the signature is inadequate. The signature is unchanged from candidate 2, which passed; what changed is one integer in the criterion.",
+      "Not that partition structure is the wrong resource. It is the resource candidate 2 used successfully.",
+      "Not that partial recurrence cannot be detected. This tests ONE relaxation, the minimal one, and its failure says nothing about a criterion built for partial recurrence rather than one that merely tolerates it.",
+      "Not that k = S is the right operating point for an acquired record. Candidate 2's own limitation stands untouched: a real pattern need not appear in every window, and k = S would reject it. Candidate 3 failing does not repair that; it means the obvious repair does not work.",
+      "No mining radius, no discharge of T4E.8's acquired-record acceptance, no closure of D96 to D100, and nothing about kind_recurrence, which still has no catalogue."
+    ],
+    "what_is_specifically_forbidden_from_here": "Raising k back towards S to rescue the admission rate. k = S is candidate 2, already measured, and re-running it under a new name would be a horse race conducted after the fact. The declaration forbids it and this outcome does not unlock it.",
+    "the_confirmatory_blocks_were_not_spent_and_now_will_not_be": "720-735 have never been generated. The adoption made spending them conditional on candidate 3 meeting its conditions here, and it did not, so the condition is not met and they stay closed. That conditionality was recorded before the numbers existed, which is the only reason it is worth anything now."
+  }
+}

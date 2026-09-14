@@ -1,0 +1,56 @@
+{
+  "diagnostic": "how the identity problem scales with scene richness",
+  "is_a_diagnostic_not_a_criterion": "Candidate D is a probe here, not a candidate under selection; it is already falsified. Nothing is adopted, no threshold is chosen and no operating point is reported.",
+  "tau": 0.8,
+  "seeds": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105
+  ],
+  "rows": [
+    {
+      "features": 6,
+      "configurations_per_scene": 20,
+      "candidate_pairs": 6000,
+      "matches_returned": 70,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.7857142857142857,
+      "false_pair_rate": 0.009189640768588136,
+      "required_pair_rate": 0.00027847396268448904,
+      "shortfall_factor": 32.99999999999999
+    },
+    {
+      "features": 9,
+      "configurations_per_scene": 84,
+      "candidate_pairs": 105840,
+      "matches_returned": 321,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.9532710280373832,
+      "false_pair_rate": 0.002891566265060241,
+      "required_pair_rate": 1.5749271596188676e-05,
+      "shortfall_factor": 183.60000000000002
+    },
+    {
+      "features": 12,
+      "configurations_per_scene": 220,
+      "candidate_pairs": 726000,
+      "matches_returned": 720,
+      "motif_pairs": 15,
+      "motif_pairs_matched": 15,
+      "false_split_rate": 0.0,
+      "false_admission_rate": 0.9791666666666666,
+      "false_pair_rate": 0.0009710944441000848,
+      "required_pair_rate": 2.295731546335898e-06,
+      "shortfall_factor": 423.0
+    }
+  ],
+  "evidence_class": "development",
+  "boundary": "Synthetic scenes at several densities settle a property of the signature, not of the atmosphere. The reserved confirmatory blocks are untouched and no defect is closed."
+}

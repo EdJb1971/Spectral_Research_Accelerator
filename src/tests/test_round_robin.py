@@ -420,6 +420,20 @@ def test_a_conceded_dissent_is_resolved_by_the_concession():
     assert exchange.unresolved_dissent == ()
 
 
+def test_a_reassessment_cannot_reopen_the_four_concessions_seen_in_attempt_two():
+    script = {role: _challenge(verdict="unsupported", dissent=True)
+              for role in CHALLENGE_ROLES}
+    script.update({("response_and_revision", role): _response(role, "conceded")
+                   for role in CHALLENGE_ROLES})
+    script["independent_reassessment"] = _reassessment(standing=CHALLENGE_ROLES)
+
+    with pytest.raises(RecordedTurnRefused) as refusal:
+        _play(open_round_robin(_climbed("candidate_precursor"), _panel()), script)
+
+    assert "A concession is final" in str(refusal.value.cause)
+    assert refusal.value.reviewed.review.calls[-1].request.role == "independent_reassessment"
+
+
 def test_a_rebuttal_the_reassessment_leaves_alone_resolves_the_dissent():
     script = {"confounder_challenge": _challenge(verdict="unclear", dissent=True)}
     exchange = _play(open_round_robin(_climbed("candidate_precursor"), _panel()), script)
@@ -452,7 +466,7 @@ def test_a_reassessment_cannot_reopen_a_challenge_that_never_dissented():
     script = {"independent_reassessment": _reassessment(standing=("provenance_challenge",))}
     with pytest.raises(RecordedTurnRefused) as refusal:
         _play(open_round_robin(_climbed("candidate_precursor"), _panel()), script)
-    assert "cannot originate one at this turn" in str(refusal.value.cause)
+    assert "cannot originate a dissent" in str(refusal.value.cause)
 
 
 def test_a_reassessment_naming_the_same_dissent_twice_is_refused():

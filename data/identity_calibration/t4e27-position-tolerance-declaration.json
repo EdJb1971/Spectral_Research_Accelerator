@@ -1,0 +1,87 @@
+{
+  "schema": "t4e27-position-tolerance-restatement/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.27",
+  "artefact": "a defensible tolerance for the join between an extracted feature and a catalogue cyclone centre, built from its declared components, and the T4E.18 acceptance restated against it",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-11",
+
+  "why_this_exists": "T4E.21 named this work and deferred it in writing: if an 850 hPa relative-vorticity maximum and an agency's reported surface centre are not the same quantity, then about 34 km is an intrinsic cost of the comparison rather than an error to be fixed, and restating the T4E.18 acceptance against a defensible tolerance is the correct response -- 'that restatement is its own declaration and is not made here'. This is that declaration. T4E.18's acceptance FAILED at 2 of 18 and 1 of 18 against a bar of 9, and it has stood as a failure ever since against a tolerance nobody has yet argued for.",
+
+  "why_the_original_bar_was_wrong_and_none_of_these_reasons_is_that_it_failed": {
+    "reason_1_it_is_a_category_error": "The tolerance used was `the catalogue's own per-observation radius`. That radius is an agency's bound on ITS OWN uncertainty about ITS OWN quantity -- where the surface centre is. It is not, and was never claimed to be, a bound on the separation between two DIFFERENT quantities. Using it to test a cross-quantity join asks the record to place a vorticity maximum inside the uncertainty of a surface centre, which is a requirement no correct instrument could be expected to meet.",
+    "reason_2_part_of_the_bar_was_unsatisfiable_by_construction": "The per-observation radii in `measurements/t4e18_acceptance.json` run from 0.00 to 145.23 km with a median of 22.11. LINDA's is exactly 0.00. A tolerance of zero admits no measurement whatever, so at least one of the eighteen storms could never have passed condition 1 however good the extraction was. A zero there is a missing agency report recorded as a number, and this programme's own rule -- a named refusal is preferable to an unsupported number -- was applied to its outputs and not to this input.",
+    "reason_3_the_radius_is_empirically_not_the_scale_of_the_error": "T4E.19 measured it directly, with the prediction fixed beforehand: the correlation between offset and catalogue radius is +0.020 with a leave-one-storm-out range of [-0.033, +0.096]. The offset does not track the agencies' own disagreement about where the centre is. That was recorded at the time as ruling out cause B; it is equally evidence that the radius is the wrong ruler.",
+    "what_makes_these_admissible_as_reasons": "Each was established before this task existed and none of them consults whether a wider tolerance would pass. Reason 3 is a measurement declared and taken for a different purpose. If the restated bar below still fails, all three reasons stand unchanged."
+  },
+
+  "the_restated_tolerance": {
+    "the_form": "For each observation, the tolerance is the quadrature sum of the components below. Quadrature rather than a sum because these are independent contributions to a separation, and rather than a maximum because a maximum would discard the others entirely.",
+    "component_1_catalogue_uncertainty": "The agency-reported per-observation radius, used where the agency reports one. Where it is absent -- recorded as 0.00 -- the observation is REFUSED BY NAME and excluded from the denominator, not assigned a default and not silently passed. The count of refusals is reported beside every figure.",
+    "component_2_estimator_localisation": "The extractor's own measured localisation error on known ground truth. T4E.21 measured it at the record's own planting density: 0.295 cells, which is 8.2 km at this grid. That number was measured on synthetic scenes for a different purpose before this task existed, and it is used as measured rather than re-derived here.",
+    "what_is_deliberately_NOT_a_component_and_why_that_is_the_point": "The difference between an 850 hPa relative-vorticity maximum and a surface centre. No defensible number for it exists in this repository, and inventing one -- or setting it to whatever would make the acceptance pass -- is precisely the fitting this declaration exists to avoid. It is therefore excluded, and whatever separation remains unexplained after the two justified components is the measure of it.",
+    "the_grid_spacing_is_taken_from_the_acquisition_design": "0.25 degrees, fixed in T4E.18's request before any of this data existed, and 27.75 km per degree-quarter of latitude."
+  },
+
+  "the_instrument_deliverable_which_is_the_point_of_the_task": {
+    "why_a_number_is_not_enough": "A tolerance that appears as a constant is a bar a scientist can only accept or reject. A tolerance that reports its components, their provenance and its own refusals is one they can disagree with SPECIFICALLY -- and disagreeing specifically is what lets someone else's question be asked with this instrument instead of only ours.",
+    "what_is_built": "A named tolerance object that carries each component, its source, the arithmetic that combined them, and the observations it refused and why. It computes a tolerance; it does not decide an acceptance.",
+    "and_the_verdict_is_reported_as_a_curve": "The acceptance is additionally reported as a function of tolerance across a range, so a reader can see where the verdict would flip and how far that is from the declared bar. The DECLARED bar decides the verdict -- the curve is not a menu to choose from, and choosing a point on it afterwards would be the horse race R20 forbids. It is there so the bar can be argued with rather than merely believed."
+  },
+
+  "what_is_held_fixed_so_that_only_the_bar_changes": {
+    "the_population_is_unchanged": "The same eighteen storms at the same deepest-interior observation per storm as `measurements/t4e18_acceptance.json`. T4E.19's 154-observation core population, its 200 km pairing and its dateline separation are NOT adopted here, because adopting them would change the population and the bar at once and no one could then say which moved the verdict.",
+    "the_conditions_are_unchanged": "Condition 1 remains the nearest feature inside tolerance for at least half the storms; condition 2 remains three or more features inside tolerance for at least half. Only what `inside` means changes.",
+    "the_extraction_is_unchanged": "No peeled null, no new extractor, no change to alpha. T4E.26 adopted nothing and this task adopts nothing from it."
+  },
+
+  "the_blindness_claim_and_its_limit": {
+    "this_declaration_is_not_blind_and_is_not_presented_as_if_it_were": "The core offset is known to be a median of 33.8 km from T4E.19, and the original acceptance is known to have failed. Any tolerance declared now is written by someone who knows both.",
+    "what_is_done_about_it_instead_of_claiming_otherwise": "The tolerance is not chosen; it is COMPUTED from two components whose values were fixed elsewhere and earlier -- an agency's reported radius, and a localisation error T4E.21 measured on synthetic ground truth for a different purpose. Neither was selected by looking at 33.8 km, and the formula is fixed here before the acceptance is re-run. If the components happen to sum near 33.8 that is a result to report; if they sum well below it, the acceptance fails again and that is also a result.",
+    "the_temptation_this_task_must_not_yield_to": "Adding a third component for the quantity difference, sized so that the acceptance passes. The declaration forbids it above, and the receipt must show the two components and nothing else."
+  },
+
+  "the_prediction_declared_before_the_measurement": {
+    "what_I_predict": "The restated acceptance STILL FAILS. The two justified components give a tolerance of order 20 to 30 km for a typical observation, against a median nearest-feature distance of 127 km in this population, and even against T4E.19's much more favourable core offset of 33.8 km the margin is thin. I expect condition 1 to improve from 2 of 18 but not to reach 9.",
+    "why_I_am_predicting_failure_for_a_task_whose_purpose_could_be_read_as_rescuing_a_result": "Because that reading is the risk. A restatement declared by the party whose earlier result failed is exactly where a bar gets quietly moved, and predicting failure in writing beforehand is the only thing that makes a pass credible if one occurs.",
+    "what_would_falsify_it": "Condition 1 met by 9 or more of 18 under the declared tolerance.",
+    "what_either_outcome_licenses": "A failure localises the entire remaining discrepancy to the excluded component -- the vorticity-versus-surface-centre difference -- and makes quantifying THAT the blocker, which is a sharper statement than the one standing today. A pass would say the original bar alone was carrying the failure, and would still license nothing about the atmosphere."
+  },
+
+  "what_this_slice_will_not_do": [
+    "It will not add a component for the quantity difference, nor set any component by what makes the acceptance pass.",
+    "It will not change the population, the conditions, the extractor, the null or alpha.",
+    "It will not adopt a tolerance into any pipeline, approve a mining radius, or discharge T4E.8's acquired-record acceptance.",
+    "It will not choose an operating point from the reported acceptance curve (R20).",
+    "It will not re-open or re-run T4E.19, and it does not supersede T4E.18's record -- which is corrected in the open, not edited.",
+    "It will not touch the reserved seeds 720-735 or 880-895.",
+    "It will not touch the 2022-2023 forecast-test period.",
+    "It will not claim that a defensible tolerance makes the record usable for kind_recurrence; that needs its own evidence."
+  ],
+
+  "acceptance_for_this_slice": {
+    "condition_1": "The tolerance is computed from exactly the two declared components, and the receipt shows each component per observation alongside the total.",
+    "condition_2": "Observations with no agency-reported radius are refused by name, counted, and excluded from the denominator -- and the verdict is reported over the surviving population with that population's size stated.",
+    "condition_3": "The restated acceptance is reported for conditions 1 and 2 as declared, against the same population and the same conditions as `measurements/t4e18_acceptance.json`, so the only difference from that record is the bar.",
+    "condition_4": "The acceptance curve over a range of tolerances is reported, and the declared bar is marked on it.",
+    "condition_5": "The prediction is adjudicated explicitly, in the direction the numbers fall.",
+    "condition_6": "If the restated acceptance still fails, the residual separation that the two justified components do not explain is reported as the measure of the excluded component, and named as the next blocker rather than as a defect."
+  },
+
+  "what_transfers_to_other_domains_and_what_does_not": {
+    "the_mechanism_is_domain_general": "Any domain joining an instrument's features to an external catalogue faces the same category error, and the same three failure modes: a tolerance that bounds the wrong quantity, a missing uncertainty recorded as zero, and an error scale that does not track the reported one. The tolerance object and its refusals transfer.",
+    "the_numbers_are_not": "8.2 km belongs to this extractor on this grid at this planting density, and the agency radii belong to IBTrACS in this basin. Neither is quoted elsewhere.",
+    "what_that_obliges": "A domain joining to a catalogue owes its own component list, and owes a statement of which components it cannot justify."
+  },
+
+  "governing_rules": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement.",
+    "A named refusal is preferable to an unsupported number -- and that rule applies to inputs, not only outputs.",
+    "Do not redefine the target or weaken an acceptance criterion to make a candidate pass.",
+    "Evaluate the candidate alone; no horse race (R20). The acceptance curve is for inspection, not selection.",
+    "Corrections are recorded in the open; T4E.18's record is amended beside its original, never edited away.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+
+  "claim_boundary": "This restates a bar and re-runs one acceptance measurement against an unchanged population with unchanged conditions. An acceptance measurement settles what an instrument does, not what the atmosphere does. It licenses no mining radius, no identity target, and no claim that the record supports kind_recurrence. If it passes it establishes only that the earlier bar was carrying the failure; if it fails it establishes only that a tolerance built from the components this repository can justify does not close the join."
+}

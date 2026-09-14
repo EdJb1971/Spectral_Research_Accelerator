@@ -6,6 +6,41 @@ import os
 import pytest
 
 from src.data_layer.adapters import MeteorologicalDataAdapter
+from src.core.local_environment import LOAD_ENV_VAR, load_local_environment
+
+
+def test_backend_loads_local_environment_without_overwriting_process_values(tmp_path):
+    env_file = tmp_path / ".env.local"
+    env_file.write_text(
+        "# machine-local configuration\n"
+        "SPECTRALEARTH_ALLOW_NETWORK=1\n"
+        "PRESERVED=file-value\n"
+        "QUOTED='kept secret'\n"
+        "not a valid assignment\n",
+        encoding="utf-8")
+    environment = {"PRESERVED": "process-value"}
+
+    report = load_local_environment(env_file, environ=environment)
+
+    assert report["status"] == "LOADED"
+    assert environment["SPECTRALEARTH_ALLOW_NETWORK"] == "1"
+    assert environment["PRESERVED"] == "process-value"
+    assert environment["QUOTED"] == "kept secret"
+    assert report["loaded_names"] == ["SPECTRALEARTH_ALLOW_NETWORK", "QUOTED"]
+    assert report["preserved_names"] == ["PRESERVED"]
+    assert report["ignored_lines"] == [5]
+    assert "file-value" not in repr(report) and "kept secret" not in repr(report)
+
+
+def test_backend_local_environment_loading_has_an_explicit_opt_out(tmp_path):
+    env_file = tmp_path / ".env.local"
+    env_file.write_text("SPECTRALEARTH_ALLOW_NETWORK=1\n", encoding="utf-8")
+    environment = {LOAD_ENV_VAR: "0"}
+
+    report = load_local_environment(env_file, environ=environment)
+
+    assert report["status"] == "DISABLED"
+    assert "SPECTRALEARTH_ALLOW_NETWORK" not in environment
 
 
 # --------------------------------------------------------------------------- health (T3.5.9)

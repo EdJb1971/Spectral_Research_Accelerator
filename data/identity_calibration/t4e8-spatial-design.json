@@ -1,0 +1,33 @@
+{
+  "schema": "spectral-spatial-identity-audit-design/v1",
+  "status": "exploratory_engineering_design_not_a_signed_scientific_declaration",
+  "record_path": "data/era5_cache/a07c23ec89f953c1.zarr",
+  "climatology_path": "data/mining_declarations/t4f6-tasman-climatology.pt",
+  "source_declaration": "data/mining_declarations/t4f6-tasman-mining-declaration.json",
+  "purpose": "T4E.8 slice 2: evaluate a band- and strength-independent definition of spatial identity. This design is fixed before this candidate is measured; it is informed by slice 1 and is exploratory, not confirmatory.",
+  "signature_mode": "spatial_geometry",
+  "signature_definition": "Pairwise Euclidean separation in this record's parent-grid cells, plus admitted principal-axis bearings. Translation, rotation and reflection preserve the configuration; rescaling does not. Detector band scales and coefficient strengths are carried only. No scale-free two-node shape is claimed.",
+  "windows": [
+    {"start": 0, "stop": 480, "role": "calibration_previous_census_window"},
+    {"start": 480, "stop": 960, "role": "disjoint_training_window_evaluation"},
+    {"start": 960, "stop": 1440, "role": "disjoint_training_window_evaluation"}
+  ],
+  "held_out_forecast_period": "2022-2023 is not opened by this audit. The evaluation windows are within the existing training split and share its train-fitted climatology; this is not independent confirmatory evidence.",
+  "transform": {"family": "swt", "wavelet": "haar", "levels": 7, "levels_read": [3, 4, 5, 6, 7]},
+  "detection": {"threshold_sigma": 3.5, "max_nodes_per_frame": 48},
+  "cardinalities": [2],
+  "weights": {"geometry": 1.0, "bearings": 1.0, "strengths": 1.0, "scales": 1.0},
+  "weights_basis": "Keep the declared weights unchanged. The new signature has no comparable strength or scale block, so those weights have nothing to act on. No weight search is performed.",
+  "labels": "Equal sorted track_ids within one tracking window; all distinct observations of a repeated key. Different keys are proxy negatives, including keys sharing a track. Neither label class establishes physical identity or nonidentity.",
+  "stationary_stratum": "Exactly one observed cadence apart and maximum same-track displacement at most one parent-grid cell. No band condition is used for candidate calibration.",
+  "legacy_clean_stratum": "Stationary plus no change in the per-track band labels, retained for comparison to slice 1.",
+  "unrelated_pairs": 20000,
+  "sampling_seed": 20260908,
+  "radius_rule": "Smallest observed stationary-pair distance admitting at least 90% of calibration-window stationary proxy repeats. Freeze that radius and apply unchanged in both evaluation windows. If no stationary pairs exist, publish NO_CALIBRATION_PAIRS and no radius.",
+  "acceptance_max_false_split": 0.1,
+  "acceptance_max_false_admission": 0.1,
+  "acceptance_population": "All repeated-key pairs, not just the selected stationary stratum, in each disjoint evaluation window. Both empirical error rates must meet the bounds. This is a necessary diagnostic, not sufficient scientific validation.",
+  "precision_reporting": "Report pair counts and distinct contributing track keys; pairs are dependent. Report ceil(0.1*n) upper-tail observations rather than treating pair counts as independent sample sizes. Do not manufacture confidence bounds from iid binomial assumptions.",
+  "execution": {"torch_threads": 2, "decomposition_chunk_frames": 32, "coefficient_storage_dtype": "float32"},
+  "claim_boundary": "No null is built, no mining radius is approved, no held-out result or scientific claim is produced, and no catalogue or event is signed by this audit. Original receipts and declarations remain unchanged. A failed discrimination criterion leaves T4E.8 and D97 open."
+}

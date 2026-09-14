@@ -31,11 +31,11 @@ const VIEWPORTS = [
 
 /** One workspace per product mode identified by the TG18.0 baseline, plus the acquisition entry. */
 const WORKSPACES = [
-  'Acquire data',
+  'Import & acquire data',
   'Spectral transforms',
-  'Experiment Composer',
+  'New experiment',
   'Findings',
-  'Platform & evidence',
+  'System health & validation',
 ] as const;
 
 /** The compact-width breakpoint below which the workflow rail is a drawer rather than a column. */

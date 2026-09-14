@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Archive, Beaker, BookOpen, Database, FileCheck2, Landmark, Play,
-  RefreshCw, Search, ShieldCheck,
+  Archive, Beaker, BookOpen, Database, FileCheck2, Landmark, MessageSquare, Play,
+  Plus, RefreshCw, Search, ShieldCheck,
 } from 'lucide-react';
 
 import { apiService } from '../services/api';
@@ -27,22 +27,22 @@ interface Props {
 }
 
 const FILTERS: Array<{ key: 'all' | ArchiveKind; label: string }> = [
-  { key: 'all', label: 'All records' },
-  { key: 'study', label: 'Published studies' },
+  { key: 'all', label: 'All activity' },
+  { key: 'study', label: 'Studies' },
   { key: 'run', label: 'Experiment runs' },
-  { key: 'gate', label: 'Gate receipts' },
-  { key: 'evaluation', label: 'Forecast evaluations' },
-  { key: 'acquisition', label: 'Acquisitions' },
-  { key: 'validation', label: 'Validation fixtures' },
+  { key: 'gate', label: 'Decision records' },
+  { key: 'evaluation', label: 'Evaluations' },
+  { key: 'acquisition', label: 'Data imports' },
+  { key: 'validation', label: 'System checks' },
 ];
 
 const KIND_META: Record<ArchiveKind, { label: string; colour: string }> = {
   study: { label: 'Scientific evidence', colour: 'text-teal-200 border-teal-500/30 bg-teal-500/10' },
   run: { label: 'Experiment run', colour: 'text-blue-200 border-blue-500/30 bg-blue-500/10' },
-  gate: { label: 'Gate receipt', colour: 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10' },
+  gate: { label: 'Decision record', colour: 'text-emerald-200 border-emerald-500/30 bg-emerald-500/10' },
   evaluation: { label: 'Evaluation receipt', colour: 'text-cyan-200 border-cyan-500/30 bg-cyan-500/10' },
   acquisition: { label: 'Acquisition record', colour: 'text-amber-200 border-amber-500/30 bg-amber-500/10' },
-  validation: { label: 'Validation fixture', colour: 'text-violet-200 border-violet-500/30 bg-violet-500/10' },
+  validation: { label: 'System check', colour: 'text-violet-200 border-violet-500/30 bg-violet-500/10' },
 };
 
 function KindIcon({ kind }: { kind: ArchiveKind }) {
@@ -118,7 +118,7 @@ function entriesFrom(
       id: row.name, kind: 'validation', classification: 'VALIDATION FIXTURE',
       title: row.name, description: row.description,
       status: row.is_null ? 'KNOWN NULL' : 'KNOWN ANSWER',
-      detail: `Software acceptance fixture · gates: ${row.gates.join(', ')}`,
+      detail: `Known-answer system check · checks: ${row.gates.join(', ')}`,
       target: 'platform',
     })),
   ];
@@ -168,50 +168,69 @@ export default function ResearchArchive({ onNavigate, onError }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-            <Archive className="h-5 w-5 text-teal-400" aria-hidden="true" /> Research Archive
+            <Archive className="h-5 w-5 text-teal-400" aria-hidden="true" /> Research dashboard
           </h2>
           <p className="mt-1 max-w-4xl text-sm leading-relaxed text-slate-400">
-            One index over persisted scientific records and software-validation evidence. Record
-            classes remain separate: a passing fixture is not a published study, and a completed
-            run is not automatically admitted evidence.
+            Start a new investigation, return to earlier experiments, inspect results, or discuss
+            a published finding. Everything saved by this installation is searchable below.
           </p>
         </div>
         <button type="button" onClick={() => void load()} disabled={busy}
           className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800
                      px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50">
           <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" />
-          Refresh index
+          Refresh dashboard
         </button>
       </header>
 
+      <section className="grid gap-3 md:grid-cols-3" aria-label="Common actions">
+        <button type="button" onClick={() => onNavigate('experimentComposer')}
+          className="group rounded-xl border border-teal-500/30 bg-teal-500/10 p-4 text-left hover:bg-teal-500/15">
+          <Plus className="h-5 w-5 text-teal-300" aria-hidden="true" />
+          <strong className="mt-3 block text-sm text-white">Start a new experiment</strong>
+          <span className="mt-1 block text-xs text-slate-400">Define a question, select data, freeze the plan, and run it.</span>
+        </button>
+        <button type="button" onClick={() => onNavigate('acquire')}
+          className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 text-left hover:border-slate-600">
+          <Database className="h-5 w-5 text-amber-300" aria-hidden="true" />
+          <strong className="mt-3 block text-sm text-white">Add or find data</strong>
+          <span className="mt-1 block text-xs text-slate-400">Import a file or use one of the available data sources.</span>
+        </button>
+        <button type="button" onClick={() => onNavigate('findings')}
+          className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 text-left hover:border-slate-600">
+          <BookOpen className="h-5 w-5 text-blue-300" aria-hidden="true" />
+          <strong className="mt-3 block text-sm text-white">Read findings</strong>
+          <span className="mt-1 block text-xs text-slate-400">Review conclusions, limitations, and supporting evidence.</span>
+        </button>
+      </section>
+
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Archive summary">
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <span className="text-xs uppercase tracking-wide text-slate-500">Research records</span>
+          <span className="text-xs uppercase tracking-wide text-slate-500">Studies &amp; runs</span>
           <strong className="mt-1 block text-2xl font-semibold text-slate-100">{researchRecords}</strong>
         </div>
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-          <span className="text-xs uppercase tracking-wide text-emerald-300/70">Gate receipts</span>
+          <span className="text-xs uppercase tracking-wide text-emerald-300/70">Decisions</span>
           <strong className="mt-1 block text-2xl font-semibold text-emerald-200">{counts.gate}</strong>
         </div>
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <span className="text-xs uppercase tracking-wide text-amber-300/70">Acquisition records</span>
+          <span className="text-xs uppercase tracking-wide text-amber-300/70">Data imports</span>
           <strong className="mt-1 block text-2xl font-semibold text-amber-200">{counts.acquisition}</strong>
         </div>
         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-          <span className="text-xs uppercase tracking-wide text-violet-300/70">Known-answer fixtures</span>
+          <span className="text-xs uppercase tracking-wide text-violet-300/70">System checks</span>
           <strong className="mt-1 block text-2xl font-semibold text-violet-200">{counts.validation}</strong>
         </div>
       </section>
 
-      <section className="instrument-notice" aria-label="Test evidence boundary">
+      <section className="instrument-notice" aria-label="How records are classified">
         <ShieldCheck className="instrument-notice__icon h-4 w-4" aria-hidden="true" />
         <div>
-          <h3 className="text-sm font-semibold text-amber-100">Why pytest studies are not listed as studies</h3>
+          <h3 className="text-sm font-semibold text-amber-100">Results keep their scientific meaning</h3>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            Automated tests write evidence bundles and experiment runs into isolated temporary
-            stores. They prove implementation behavior and are discarded after the test. The
-            known-answer catalogue below is inspectable as validation evidence, but it receives no
-            scientific claim rung and never enters Findings automatically.
+            A completed run is work performed, not automatically a supported conclusion. Studies,
+            decisions, imported data, and system checks remain separate so you can see exactly what
+            each record establishes.
           </p>
         </div>
       </section>
@@ -268,11 +287,22 @@ export default function ResearchArchive({ onNavigate, onError }: Props) {
                 {entry.detail && <p className="mt-2 text-xs leading-relaxed text-slate-500">{entry.detail}</p>}
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-800 pt-3">
                   <code className="truncate text-[10px] text-slate-600" title={entry.id}>{entry.id}</code>
-                  <button type="button" onClick={() => onNavigate(entry.target, entry.studyId)}
-                    className="shrink-0 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium
-                               text-slate-200 hover:bg-slate-700">
-                    Inspect record
-                  </button>
+                  <div className="flex shrink-0 gap-2">
+                    {entry.kind === 'study' && entry.studyId && (
+                      <button type="button" onClick={() => onNavigate('findings', entry.studyId)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-teal-500/30
+                                   bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-200
+                                   hover:bg-teal-500/20">
+                        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" /> Discuss finding
+                      </button>
+                    )}
+                    <button type="button" onClick={() => onNavigate(entry.target, entry.studyId)}
+                      className="shrink-0 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium
+                                 text-slate-200 hover:bg-slate-700">
+                      {entry.kind === 'run' ? 'Open experiment'
+                        : entry.kind === 'study' ? 'View findings' : 'View details'}
+                    </button>
+                  </div>
                 </div>
               </li>
             );

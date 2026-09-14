@@ -66,7 +66,7 @@ const MODES = [
   },
   {
     mode: 'guided commitment workflow',
-    workspace: 'Experiment Composer',
+    workspace: 'New experiment',
     slug: 'commitment',
     signature: 'composition_path' as SignatureId,
   },
@@ -78,7 +78,7 @@ const MODES = [
   },
   {
     mode: 'trust and qualification surface',
-    workspace: 'Platform & evidence',
+    workspace: 'System health & validation',
     slug: 'qualification',
     signature: 'qualification_matrix' as SignatureId,
   },
@@ -145,7 +145,7 @@ for (const viewport of VIEWPORTS) {
     test('the guided commitment workflow serves its ordered steps and one next action',
       async ({ page }) => {
         test.slow();
-        await reach(page, 'Experiment Composer');
+        await reach(page, 'New experiment');
 
         // Served, not held here: until the server answers, the view says so rather than
         // inventing a step order of its own.
@@ -197,7 +197,7 @@ for (const viewport of VIEWPORTS) {
     test('the trust surface shows a cleared gate and an uncleared one with its reason',
       async ({ page }) => {
         test.slow();
-        await reach(page, 'Platform & evidence');
+        await reach(page, 'System health & validation');
 
         await expect(SIGNATURES.qualification_matrix(page)).toBeVisible();
 

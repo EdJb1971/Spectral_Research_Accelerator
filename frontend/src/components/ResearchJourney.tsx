@@ -29,8 +29,8 @@ const JOURNEY: readonly JourneyStage[] = [
     action: 'Open Run' },
   { id: 'compare', label: 'Compare', workspace: 'experimentComposer', composerStep: 'interpret',
     action: 'Open Compare' },
-  { id: 'admit', label: 'Admit', workspace: 'evidence', action: 'Open Admit' },
-  { id: 'report', label: 'Report', workspace: 'findings', action: 'Open Report' },
+  { id: 'admit', label: 'Validate', workspace: 'evidence', action: 'Validate evidence' },
+  { id: 'report', label: 'Share', workspace: 'findings', action: 'Read findings' },
 ] as const;
 
 export function ResearchJourney({ active, hasRecord, hasStudy, onNavigate }: {
@@ -47,12 +47,11 @@ export function ResearchJourney({ active, hasRecord, hasStudy, onNavigate }: {
             Research journey
           </p>
           <p className="text-xs text-slate-400">
-            Navigation only — scientific status and the next legitimate experiment action remain
-            server-owned in Composer.
+            Use these steps to move from data to a traceable result.
           </p>
         </div>
         <p className="research-journey__boundary">
-          This map does not advance or replace the claim ladder.
+          Completing a screen does not by itself prove a scientific claim.
         </p>
       </div>
       <ol className="research-journey__stages">
@@ -82,14 +81,14 @@ export function ResearchJourney({ active, hasRecord, hasStudy, onNavigate }: {
               </div>
               {blocked && (
                 <p className="research-journey__reason">
-                  Blocked: {missingRecord ? 'no record is selected for inspection.'
-                    : 'no study is selected for evidence admission.'}
+                  {missingRecord ? 'Select a data record before inspecting it.'
+                    : 'Select or create a study before adding evidence.'}
                 </p>
               )}
               <button type="button" aria-current={current ? 'step' : undefined}
                 onClick={() => onNavigate(action.stage, action.workspace, action.composerStep)}>
                 <ArrowRight aria-hidden="true" />
-                {blocked ? `Next legitimate action: ${action.label}` : action.label}
+                {blocked ? action.label : action.label}
               </button>
             </li>
           );

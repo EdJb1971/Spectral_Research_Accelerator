@@ -1,0 +1,1887 @@
+{
+  "OUTCOME": "VERTICAL_QUANTITY_SEPARATION_DOMINANT",
+  "VERDICT": "NOT_AN_ACCEPTANCE",
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-13",
+    "adoption_file": "t4e38-reference-alignment-adoption.json",
+    "adopts_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+    "declaration": "t4e38-reference-alignment-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "claim_boundary": "The future result can compare deterministic ERA5 MSLP-basin and 850 hPa vorticity-basin centres relative to the fixed independent IBTrACS positions. It cannot identify either basin centre as the cyclone, prove vertical tilt or pressure-level/surface separation, establish independence between ERA5 and assimilated observations, validate the catalogue or extractor, approve a tolerance or mining radius, rescue T4E.36, demonstrate recurrence, or make an atmospheric claim.",
+  "decision": {
+    "counts": {
+      "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE": 7,
+      "EXACT_TIE": 1,
+      "REFUSED": 0,
+      "VERTICAL_QUANTITY_SEPARATION_CANDIDATE": 10
+    },
+    "is_acceptance_verdict": false,
+    "majority_needed": 10,
+    "outcome": "VERTICAL_QUANTITY_SEPARATION_DOMINANT",
+    "population_denominator": 18
+  },
+  "declaration": "data/identity_calibration/t4e38-reference-alignment-declaration.json",
+  "declaration_sha256": "0ad4e5376359a46e5d44b2c6b09455574b0a7443361595560896a6b255ead477",
+  "method": {
+    "catalogue_seeded": true,
+    "distance_function": "catalogue_join.great_circle_km",
+    "mslp_direction": "minimum",
+    "neighbourhood": "3x3",
+    "search_radius_used": false,
+    "tie_break": "great_circle_to_catalogue_then_lower_row_then_lower_column",
+    "vorticity_direction_after_negation": "maximum",
+    "vorticity_negated": true
+  },
+  "network_used": false,
+  "population": {
+    "catalogue_census_rerun": false,
+    "failures_only_selected": false,
+    "forecast_test_opened": false,
+    "rows": 18
+  },
+  "receipt_sha256": "9906ef4ef6aee18974f0774cf3e823dd0135f997f63f154dbd416796abccd679",
+  "rows": [
+    {
+      "catalogue_position": {
+        "lat": -36.8,
+        "lon": 165.9
+      },
+      "catalogue_to_mslp_km": 10.499469219874193,
+      "catalogue_to_vorticity_km": 34.53077173786449,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 97421.125,
+          "grid_index": [
+            75,
+            104
+          ],
+          "lat": -36.75,
+          "lon": 166.0
+        },
+        "path": [
+          {
+            "field_value": 97421.125,
+            "grid_index": [
+              75,
+              104
+            ],
+            "lat": -36.75,
+            "lon": 166.0
+          }
+        ],
+        "seed_grid_index": [
+          75,
+          104
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 0
+      },
+      "mslp_to_vorticity_km": 27.798731661139367,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0006167050451040268,
+          "grid_index": [
+            74,
+            104
+          ],
+          "lat": -36.5,
+          "lon": 166.0
+        },
+        "path": [
+          {
+            "field_value": 0.0005980487912893295,
+            "grid_index": [
+              75,
+              104
+            ],
+            "lat": -36.75,
+            "lon": 166.0
+          },
+          {
+            "field_value": 0.0006167050451040268,
+            "grid_index": [
+              74,
+              104
+            ],
+            "lat": -36.5,
+            "lon": 166.0
+          }
+        ],
+        "seed_grid_index": [
+          75,
+          104
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2018027S11156",
+      "storm": "FEHI",
+      "t4e36_inside_radius": 0,
+      "time": "2018-01-31 12:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -38.6,
+        "lon": 169.6
+      },
+      "catalogue_to_mslp_km": 49.43908027264395,
+      "catalogue_to_vorticity_km": 73.43222136754875,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 97830.125,
+          "grid_index": [
+            81,
+            117
+          ],
+          "lat": -38.25,
+          "lon": 169.25
+        },
+        "path": [
+          {
+            "field_value": 97830.375,
+            "grid_index": [
+              82,
+              118
+            ],
+            "lat": -38.5,
+            "lon": 169.5
+          },
+          {
+            "field_value": 97830.125,
+            "grid_index": [
+              81,
+              117
+            ],
+            "lat": -38.25,
+            "lon": 169.25
+          }
+        ],
+        "seed_grid_index": [
+          82,
+          118
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 119.34915963500832,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.000530770281329751,
+          "grid_index": [
+            85,
+            119
+          ],
+          "lat": -39.25,
+          "lon": 169.75
+        },
+        "path": [
+          {
+            "field_value": 0.00033288286067545414,
+            "grid_index": [
+              82,
+              118
+            ],
+            "lat": -38.5,
+            "lon": 169.5
+          },
+          {
+            "field_value": 0.00043123052455484867,
+            "grid_index": [
+              83,
+              119
+            ],
+            "lat": -38.75,
+            "lon": 169.75
+          },
+          {
+            "field_value": 0.0005084185395389795,
+            "grid_index": [
+              84,
+              119
+            ],
+            "lat": -39.0,
+            "lon": 169.75
+          },
+          {
+            "field_value": 0.000530770281329751,
+            "grid_index": [
+              85,
+              119
+            ],
+            "lat": -39.25,
+            "lon": 169.75
+          }
+        ],
+        "seed_grid_index": [
+          82,
+          118
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "sid": "2018038S15172",
+      "storm": "GITA",
+      "t4e36_inside_radius": 1,
+      "time": "2018-02-20 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -31.5,
+        "lon": 175.8
+      },
+      "catalogue_to_mslp_km": 55.79811084053356,
+      "catalogue_to_vorticity_km": 33.63565888235349,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99707.6875,
+          "grid_index": [
+            56,
+            143
+          ],
+          "lat": -32.0,
+          "lon": 175.75
+        },
+        "path": [
+          {
+            "field_value": 99725.8125,
+            "grid_index": [
+              54,
+              143
+            ],
+            "lat": -31.5,
+            "lon": 175.75
+          },
+          {
+            "field_value": 99712.4375,
+            "grid_index": [
+              55,
+              143
+            ],
+            "lat": -31.75,
+            "lon": 175.75
+          },
+          {
+            "field_value": 99707.6875,
+            "grid_index": [
+              56,
+              143
+            ],
+            "lat": -32.0,
+            "lon": 175.75
+          }
+        ],
+        "seed_grid_index": [
+          54,
+          143
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 2
+      },
+      "mslp_to_vorticity_km": 36.46979116472234,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00019207061268389225,
+          "grid_index": [
+            55,
+            144
+          ],
+          "lat": -31.75,
+          "lon": 176.0
+        },
+        "path": [
+          {
+            "field_value": 0.00016974867321550846,
+            "grid_index": [
+              54,
+              143
+            ],
+            "lat": -31.5,
+            "lon": 175.75
+          },
+          {
+            "field_value": 0.00019207061268389225,
+            "grid_index": [
+              55,
+              144
+            ],
+            "lat": -31.75,
+            "lon": 176.0
+          }
+        ],
+        "seed_grid_index": [
+          54,
+          143
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2018064S16172",
+      "storm": "HOLA",
+      "t4e36_inside_radius": 0,
+      "time": "2018-03-12 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -23.8,
+        "lon": 156.3
+      },
+      "catalogue_to_mslp_km": 7.5364267420892945,
+      "catalogue_to_vorticity_km": 30.132461262512805,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 100423.1875,
+          "grid_index": [
+            23,
+            65
+          ],
+          "lat": -23.75,
+          "lon": 156.25
+        },
+        "path": [
+          {
+            "field_value": 100423.1875,
+            "grid_index": [
+              23,
+              65
+            ],
+            "lat": -23.75,
+            "lon": 156.25
+          }
+        ],
+        "seed_grid_index": [
+          23,
+          65
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 0
+      },
+      "mslp_to_vorticity_km": 37.6688824099733,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00029382575303316116,
+          "grid_index": [
+            24,
+            66
+          ],
+          "lat": -24.0,
+          "lon": 156.5
+        },
+        "path": [
+          {
+            "field_value": 0.00028878916054964066,
+            "grid_index": [
+              23,
+              65
+            ],
+            "lat": -23.75,
+            "lon": 156.25
+          },
+          {
+            "field_value": 0.00029382575303316116,
+            "grid_index": [
+              24,
+              66
+            ],
+            "lat": -24.0,
+            "lon": 156.5
+          }
+        ],
+        "seed_grid_index": [
+          23,
+          65
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2018070S10160",
+      "storm": "LINDA",
+      "t4e36_inside_radius": 0,
+      "time": "2018-03-15 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -22.7,
+        "lon": 159.2
+      },
+      "catalogue_to_mslp_km": 54.09312624056609,
+      "catalogue_to_vorticity_km": 80.50814806606355,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99786.4375,
+          "grid_index": [
+            17,
+            76
+          ],
+          "lat": -22.25,
+          "lon": 159.0
+        },
+        "path": [
+          {
+            "field_value": 99842.1875,
+            "grid_index": [
+              19,
+              77
+            ],
+            "lat": -22.75,
+            "lon": 159.25
+          },
+          {
+            "field_value": 99801.6875,
+            "grid_index": [
+              18,
+              76
+            ],
+            "lat": -22.5,
+            "lon": 159.0
+          },
+          {
+            "field_value": 99786.4375,
+            "grid_index": [
+              17,
+              76
+            ],
+            "lat": -22.25,
+            "lon": 159.0
+          }
+        ],
+        "seed_grid_index": [
+          19,
+          77
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 2
+      },
+      "mslp_to_vorticity_km": 27.798731661139723,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0003113485872745514,
+          "grid_index": [
+            16,
+            76
+          ],
+          "lat": -22.0,
+          "lon": 159.0
+        },
+        "path": [
+          {
+            "field_value": 0.0001918412744998932,
+            "grid_index": [
+              19,
+              77
+            ],
+            "lat": -22.75,
+            "lon": 159.25
+          },
+          {
+            "field_value": 0.0002611614763736725,
+            "grid_index": [
+              18,
+              76
+            ],
+            "lat": -22.5,
+            "lon": 159.0
+          },
+          {
+            "field_value": 0.00030473247170448303,
+            "grid_index": [
+              17,
+              75
+            ],
+            "lat": -22.25,
+            "lon": 158.75
+          },
+          {
+            "field_value": 0.0003113485872745514,
+            "grid_index": [
+              16,
+              76
+            ],
+            "lat": -22.0,
+            "lon": 159.0
+          }
+        ],
+        "seed_grid_index": [
+          19,
+          77
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "sid": "2018082S12164",
+      "storm": "IRIS",
+      "t4e36_inside_radius": 0,
+      "time": "2018-03-28 06:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -21.5,
+        "lon": 179.0
+      },
+      "catalogue_to_mslp_km": 111.19492664455854,
+      "catalogue_to_vorticity_km": 37.98530692991347,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99853.3125,
+          "grid_index": [
+            18,
+            156
+          ],
+          "lat": -22.5,
+          "lon": 179.0
+        },
+        "path": [
+          {
+            "field_value": 99920.5625,
+            "grid_index": [
+              14,
+              156
+            ],
+            "lat": -21.5,
+            "lon": 179.0
+          },
+          {
+            "field_value": 99884.0625,
+            "grid_index": [
+              15,
+              155
+            ],
+            "lat": -21.75,
+            "lon": 178.75
+          },
+          {
+            "field_value": 99867.5625,
+            "grid_index": [
+              16,
+              156
+            ],
+            "lat": -22.0,
+            "lon": 179.0
+          },
+          {
+            "field_value": 99858.3125,
+            "grid_index": [
+              17,
+              156
+            ],
+            "lat": -22.25,
+            "lon": 179.0
+          },
+          {
+            "field_value": 99853.3125,
+            "grid_index": [
+              18,
+              156
+            ],
+            "lat": -22.5,
+            "lon": 179.0
+          }
+        ],
+        "seed_grid_index": [
+          14,
+          156
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 4
+      },
+      "mslp_to_vorticity_km": 141.36722708797652,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00020438618957996368,
+          "grid_index": [
+            13,
+            155
+          ],
+          "lat": -21.25,
+          "lon": 178.75
+        },
+        "path": [
+          {
+            "field_value": 0.00020057149231433868,
+            "grid_index": [
+              14,
+              156
+            ],
+            "lat": -21.5,
+            "lon": 179.0
+          },
+          {
+            "field_value": 0.00020438618957996368,
+            "grid_index": [
+              13,
+              155
+            ],
+            "lat": -21.25,
+            "lon": 178.75
+          }
+        ],
+        "seed_grid_index": [
+          14,
+          156
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2018089S18172",
+      "storm": "JOSIE",
+      "t4e36_inside_radius": 0,
+      "time": "2018-04-03 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -20.8,
+        "lon": 150.4
+      },
+      "catalogue_to_mslp_km": 24.545475228599845,
+      "catalogue_to_vorticity_km": 87.43067091325113,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99834.5,
+          "grid_index": [
+            12,
+            42
+          ],
+          "lat": -21.0,
+          "lon": 150.5
+        },
+        "path": [
+          {
+            "field_value": 99844.75,
+            "grid_index": [
+              11,
+              42
+            ],
+            "lat": -20.75,
+            "lon": 150.5
+          },
+          {
+            "field_value": 99834.5,
+            "grid_index": [
+              12,
+              42
+            ],
+            "lat": -21.0,
+            "lon": 150.5
+          }
+        ],
+        "seed_grid_index": [
+          11,
+          42
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 98.29753199259535,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00030190637335181236,
+          "grid_index": [
+            9,
+            44
+          ],
+          "lat": -20.25,
+          "lon": 151.0
+        },
+        "path": [
+          {
+            "field_value": 0.00023827841505408287,
+            "grid_index": [
+              11,
+              42
+            ],
+            "lat": -20.75,
+            "lon": 150.5
+          },
+          {
+            "field_value": 0.00029949238523840904,
+            "grid_index": [
+              10,
+              43
+            ],
+            "lat": -20.5,
+            "lon": 150.75
+          },
+          {
+            "field_value": 0.00030190637335181236,
+            "grid_index": [
+              9,
+              44
+            ],
+            "lat": -20.25,
+            "lon": 151.0
+          }
+        ],
+        "seed_grid_index": [
+          11,
+          42
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 2
+      },
+      "sid": "2018334S09156",
+      "storm": "OWEN",
+      "t4e36_inside_radius": 0,
+      "time": "2018-12-17 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -20.0,
+        "lon": 149.0
+      },
+      "catalogue_to_mslp_km": 0.0,
+      "catalogue_to_vorticity_km": 26.12226058514829,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 100131.25,
+          "grid_index": [
+            8,
+            36
+          ],
+          "lat": -20.0,
+          "lon": 149.0
+        },
+        "path": [
+          {
+            "field_value": 100131.25,
+            "grid_index": [
+              8,
+              36
+            ],
+            "lat": -20.0,
+            "lon": 149.0
+          }
+        ],
+        "seed_grid_index": [
+          8,
+          36
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 0
+      },
+      "mslp_to_vorticity_km": 26.12226058514829,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0003050561062991619,
+          "grid_index": [
+            8,
+            35
+          ],
+          "lat": -20.0,
+          "lon": 148.75
+        },
+        "path": [
+          {
+            "field_value": 0.00029975129291415215,
+            "grid_index": [
+              8,
+              36
+            ],
+            "lat": -20.0,
+            "lon": 149.0
+          },
+          {
+            "field_value": 0.0003050561062991619,
+            "grid_index": [
+              8,
+              35
+            ],
+            "lat": -20.0,
+            "lon": 148.75
+          }
+        ],
+        "seed_grid_index": [
+          8,
+          36
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2018363S12145",
+      "storm": "PENNY",
+      "t4e36_inside_radius": 0,
+      "time": "2019-01-08 18:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -28.2,
+        "lon": 161.3
+      },
+      "catalogue_to_mslp_km": 44.43704496073717,
+      "catalogue_to_vorticity_km": 44.43704496073717,
+      "classification": "EXACT_TIE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 98484.3125,
+          "grid_index": [
+            42,
+            84
+          ],
+          "lat": -28.5,
+          "lon": 161.0
+        },
+        "path": [
+          {
+            "field_value": 98501.0625,
+            "grid_index": [
+              41,
+              85
+            ],
+            "lat": -28.25,
+            "lon": 161.25
+          },
+          {
+            "field_value": 98484.3125,
+            "grid_index": [
+              42,
+              84
+            ],
+            "lat": -28.5,
+            "lon": 161.0
+          }
+        ],
+        "seed_grid_index": [
+          41,
+          85
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 0.0,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00044418941251933575,
+          "grid_index": [
+            42,
+            84
+          ],
+          "lat": -28.5,
+          "lon": 161.0
+        },
+        "path": [
+          {
+            "field_value": 0.00041945348493754864,
+            "grid_index": [
+              41,
+              85
+            ],
+            "lat": -28.25,
+            "lon": 161.25
+          },
+          {
+            "field_value": 0.00044418941251933575,
+            "grid_index": [
+              42,
+              84
+            ],
+            "lat": -28.5,
+            "lon": 161.0
+          }
+        ],
+        "seed_grid_index": [
+          41,
+          85
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2019042S17162",
+      "storm": "OMA",
+      "t4e36_inside_radius": 0,
+      "time": "2019-02-23 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -20.3,
+        "lon": 179.7
+      },
+      "catalogue_to_mslp_km": 39.35314748375212,
+      "catalogue_to_vorticity_km": 7.622976645597854,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 98437.4375,
+          "grid_index": [
+            8,
+            158
+          ],
+          "lat": -20.0,
+          "lon": 179.5
+        },
+        "path": [
+          {
+            "field_value": 98530.4375,
+            "grid_index": [
+              9,
+              159
+            ],
+            "lat": -20.25,
+            "lon": 179.75
+          },
+          {
+            "field_value": 98437.4375,
+            "grid_index": [
+              8,
+              158
+            ],
+            "lat": -20.0,
+            "lon": 179.5
+          }
+        ],
+        "seed_grid_index": [
+          9,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 38.13205946202054,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0006813148502260447,
+          "grid_index": [
+            9,
+            159
+          ],
+          "lat": -20.25,
+          "lon": 179.75
+        },
+        "path": [
+          {
+            "field_value": 0.0006813148502260447,
+            "grid_index": [
+              9,
+              159
+            ],
+            "lat": -20.25,
+            "lon": 179.75
+          }
+        ],
+        "seed_grid_index": [
+          9,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 0
+      },
+      "sid": "2019359S08175",
+      "storm": "SARAI",
+      "t4e36_inside_radius": 1,
+      "time": "2019-12-29 06:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -37.5,
+        "lon": 159.7
+      },
+      "catalogue_to_mslp_km": 17.643369975825404,
+      "catalogue_to_vorticity_km": 32.90917480334708,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 98207.9375,
+          "grid_index": [
+            78,
+            78
+          ],
+          "lat": -37.5,
+          "lon": 159.5
+        },
+        "path": [
+          {
+            "field_value": 98246.6875,
+            "grid_index": [
+              78,
+              79
+            ],
+            "lat": -37.5,
+            "lon": 159.75
+          },
+          {
+            "field_value": 98207.9375,
+            "grid_index": [
+              78,
+              78
+            ],
+            "lat": -37.5,
+            "lon": 159.5
+          }
+        ],
+        "seed_grid_index": [
+          78,
+          79
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 27.798731661139367,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0005541648715734482,
+          "grid_index": [
+            79,
+            78
+          ],
+          "lat": -37.75,
+          "lon": 159.5
+        },
+        "path": [
+          {
+            "field_value": 0.0005238857120275497,
+            "grid_index": [
+              78,
+              79
+            ],
+            "lat": -37.5,
+            "lon": 159.75
+          },
+          {
+            "field_value": 0.0005541648715734482,
+            "grid_index": [
+              79,
+              78
+            ],
+            "lat": -37.75,
+            "lon": 159.5
+          }
+        ],
+        "seed_grid_index": [
+          78,
+          79
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2020037S13163",
+      "storm": "UESI",
+      "t4e36_inside_radius": 1,
+      "time": "2020-02-15 00:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -31.2,
+        "lon": 178.1
+      },
+      "catalogue_to_mslp_km": 83.93032960301902,
+      "catalogue_to_vorticity_km": 66.02348027807356,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 97620.6875,
+          "grid_index": [
+            52,
+            149
+          ],
+          "lat": -31.0,
+          "lon": 177.25
+        },
+        "path": [
+          {
+            "field_value": 97819.5625,
+            "grid_index": [
+              53,
+              152
+            ],
+            "lat": -31.25,
+            "lon": 178.0
+          },
+          {
+            "field_value": 97705.0625,
+            "grid_index": [
+              52,
+              151
+            ],
+            "lat": -31.0,
+            "lon": 177.75
+          },
+          {
+            "field_value": 97647.5625,
+            "grid_index": [
+              52,
+              150
+            ],
+            "lat": -31.0,
+            "lon": 177.5
+          },
+          {
+            "field_value": 97620.6875,
+            "grid_index": [
+              52,
+              149
+            ],
+            "lat": -31.0,
+            "lon": 177.25
+          }
+        ],
+        "seed_grid_index": [
+          53,
+          152
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "mslp_to_vorticity_km": 60.46377016181022,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00041227415204048157,
+          "grid_index": [
+            54,
+            150
+          ],
+          "lat": -31.5,
+          "lon": 177.5
+        },
+        "path": [
+          {
+            "field_value": 0.00035016611218452454,
+            "grid_index": [
+              53,
+              152
+            ],
+            "lat": -31.25,
+            "lon": 178.0
+          },
+          {
+            "field_value": 0.00036161020398139954,
+            "grid_index": [
+              53,
+              151
+            ],
+            "lat": -31.25,
+            "lon": 177.75
+          },
+          {
+            "field_value": 0.00041227415204048157,
+            "grid_index": [
+              54,
+              150
+            ],
+            "lat": -31.5,
+            "lon": 177.5
+          }
+        ],
+        "seed_grid_index": [
+          53,
+          152
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 2
+      },
+      "sid": "2020073S14149",
+      "storm": "GRETEL",
+      "t4e36_inside_radius": 1,
+      "time": "2020-03-16 18:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -22.3,
+        "lon": 179.7
+      },
+      "catalogue_to_mslp_km": 114.58044244569358,
+      "catalogue_to_vorticity_km": 76.75830412091085,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 98258.75,
+          "grid_index": [
+            14,
+            156
+          ],
+          "lat": -21.5,
+          "lon": 179.0
+        },
+        "path": [
+          {
+            "field_value": 99187.25,
+            "grid_index": [
+              17,
+              159
+            ],
+            "lat": -22.25,
+            "lon": 179.75
+          },
+          {
+            "field_value": 98847.75,
+            "grid_index": [
+              16,
+              158
+            ],
+            "lat": -22.0,
+            "lon": 179.5
+          },
+          {
+            "field_value": 98445.0,
+            "grid_index": [
+              15,
+              157
+            ],
+            "lat": -21.75,
+            "lon": 179.25
+          },
+          {
+            "field_value": 98258.75,
+            "grid_index": [
+              14,
+              156
+            ],
+            "lat": -21.5,
+            "lon": 179.0
+          }
+        ],
+        "seed_grid_index": [
+          17,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "mslp_to_vorticity_km": 37.95502533955003,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0007733302190899849,
+          "grid_index": [
+            15,
+            157
+          ],
+          "lat": -21.75,
+          "lon": 179.25
+        },
+        "path": [
+          {
+            "field_value": 0.00023819971829652786,
+            "grid_index": [
+              17,
+              159
+            ],
+            "lat": -22.25,
+            "lon": 179.75
+          },
+          {
+            "field_value": 0.0005741911008954048,
+            "grid_index": [
+              16,
+              158
+            ],
+            "lat": -22.0,
+            "lon": 179.5
+          },
+          {
+            "field_value": 0.0007733302190899849,
+            "grid_index": [
+              15,
+              157
+            ],
+            "lat": -21.75,
+            "lon": 179.25
+          }
+        ],
+        "seed_grid_index": [
+          17,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 2
+      },
+      "sid": "2021029S16171",
+      "storm": "ANA",
+      "t4e36_inside_radius": 0,
+      "time": "2021-02-01 06:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -22.7,
+        "lon": 166.6
+      },
+      "catalogue_to_mslp_km": 24.493987946245777,
+      "catalogue_to_vorticity_km": 11.666280031817395,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99175.3125,
+          "grid_index": [
+            18,
+            106
+          ],
+          "lat": -22.5,
+          "lon": 166.5
+        },
+        "path": [
+          {
+            "field_value": 99261.5625,
+            "grid_index": [
+              19,
+              106
+            ],
+            "lat": -22.75,
+            "lon": 166.5
+          },
+          {
+            "field_value": 99175.3125,
+            "grid_index": [
+              18,
+              106
+            ],
+            "lat": -22.5,
+            "lon": 166.5
+          }
+        ],
+        "seed_grid_index": [
+          19,
+          106
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 27.798731661139723,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0006304115522652864,
+          "grid_index": [
+            19,
+            106
+          ],
+          "lat": -22.75,
+          "lon": 166.5
+        },
+        "path": [
+          {
+            "field_value": 0.0006304115522652864,
+            "grid_index": [
+              19,
+              106
+            ],
+            "lat": -22.75,
+            "lon": 166.5
+          }
+        ],
+        "seed_grid_index": [
+          19,
+          106
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 0
+      },
+      "sid": "2021025S14138",
+      "storm": "LUCAS",
+      "t4e36_inside_radius": 1,
+      "time": "2021-02-03 12:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -28.4,
+        "lon": 179.8
+      },
+      "catalogue_to_mslp_km": 94.64111047174096,
+      "catalogue_to_vorticity_km": 177.9780571081662,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99212.0625,
+          "grid_index": [
+            45,
+            159
+          ],
+          "lat": -29.25,
+          "lon": 179.75
+        },
+        "path": [
+          {
+            "field_value": 99281.0625,
+            "grid_index": [
+              42,
+              159
+            ],
+            "lat": -28.5,
+            "lon": 179.75
+          },
+          {
+            "field_value": 99236.5625,
+            "grid_index": [
+              43,
+              158
+            ],
+            "lat": -28.75,
+            "lon": 179.5
+          },
+          {
+            "field_value": 99220.5625,
+            "grid_index": [
+              44,
+              159
+            ],
+            "lat": -29.0,
+            "lon": 179.75
+          },
+          {
+            "field_value": 99212.0625,
+            "grid_index": [
+              45,
+              159
+            ],
+            "lat": -29.25,
+            "lon": 179.75
+          }
+        ],
+        "seed_grid_index": [
+          42,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "mslp_to_vorticity_km": 83.39619498341881,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0011464327108114958,
+          "grid_index": [
+            48,
+            159
+          ],
+          "lat": -30.0,
+          "lon": 179.75
+        },
+        "path": [
+          {
+            "field_value": 0.00021791155450046062,
+            "grid_index": [
+              42,
+              159
+            ],
+            "lat": -28.5,
+            "lon": 179.75
+          },
+          {
+            "field_value": 0.00029530818574130535,
+            "grid_index": [
+              43,
+              158
+            ],
+            "lat": -28.75,
+            "lon": 179.5
+          },
+          {
+            "field_value": 0.0005260377656668425,
+            "grid_index": [
+              44,
+              157
+            ],
+            "lat": -29.0,
+            "lon": 179.25
+          },
+          {
+            "field_value": 0.0005796521436423063,
+            "grid_index": [
+              45,
+              158
+            ],
+            "lat": -29.25,
+            "lon": 179.5
+          },
+          {
+            "field_value": 0.0008112757932394743,
+            "grid_index": [
+              46,
+              158
+            ],
+            "lat": -29.5,
+            "lon": 179.5
+          },
+          {
+            "field_value": 0.00094413454644382,
+            "grid_index": [
+              47,
+              159
+            ],
+            "lat": -29.75,
+            "lon": 179.75
+          },
+          {
+            "field_value": 0.0011464327108114958,
+            "grid_index": [
+              48,
+              159
+            ],
+            "lat": -30.0,
+            "lon": 179.75
+          }
+        ],
+        "seed_grid_index": [
+          42,
+          159
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 6
+      },
+      "sid": "2021058S14149",
+      "storm": "NIRAN",
+      "t4e36_inside_radius": 0,
+      "time": "2021-03-07 06:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -30.1,
+        "lon": 174.5
+      },
+      "catalogue_to_mslp_km": 16.67923899668348,
+      "catalogue_to_vorticity_km": 29.252787321957765,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 100499.25,
+          "grid_index": [
+            49,
+            138
+          ],
+          "lat": -30.25,
+          "lon": 174.5
+        },
+        "path": [
+          {
+            "field_value": 100504.5,
+            "grid_index": [
+              48,
+              138
+            ],
+            "lat": -30.0,
+            "lon": 174.5
+          },
+          {
+            "field_value": 100499.25,
+            "grid_index": [
+              49,
+              138
+            ],
+            "lat": -30.25,
+            "lon": 174.5
+          }
+        ],
+        "seed_grid_index": [
+          48,
+          138
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "mslp_to_vorticity_km": 24.01352657404171,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0002935272641479969,
+          "grid_index": [
+            49,
+            139
+          ],
+          "lat": -30.25,
+          "lon": 174.75
+        },
+        "path": [
+          {
+            "field_value": 0.0002699536271393299,
+            "grid_index": [
+              48,
+              138
+            ],
+            "lat": -30.0,
+            "lon": 174.5
+          },
+          {
+            "field_value": 0.0002935272641479969,
+            "grid_index": [
+              49,
+              139
+            ],
+            "lat": -30.25,
+            "lon": 174.75
+          }
+        ],
+        "seed_grid_index": [
+          48,
+          138
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 1
+      },
+      "sid": "2021099S15159",
+      "storm": "UNNAMED",
+      "t4e36_inside_radius": 0,
+      "time": "2021-04-12 06:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -30.7,
+        "lon": 179.0
+      },
+      "catalogue_to_mslp_km": 78.98627272079972,
+      "catalogue_to_vorticity_km": 71.90494888017275,
+      "classification": "CATALOGUE_REANALYSIS_ALIGNMENT_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99550.25,
+          "grid_index": [
+            52,
+            153
+          ],
+          "lat": -31.0,
+          "lon": 178.25
+        },
+        "path": [
+          {
+            "field_value": 99793.0,
+            "grid_index": [
+              51,
+              156
+            ],
+            "lat": -30.75,
+            "lon": 179.0
+          },
+          {
+            "field_value": 99674.5,
+            "grid_index": [
+              52,
+              155
+            ],
+            "lat": -31.0,
+            "lon": 178.75
+          },
+          {
+            "field_value": 99599.25,
+            "grid_index": [
+              53,
+              154
+            ],
+            "lat": -31.25,
+            "lon": 178.5
+          },
+          {
+            "field_value": 99550.25,
+            "grid_index": [
+              52,
+              153
+            ],
+            "lat": -31.0,
+            "lon": 178.25
+          }
+        ],
+        "seed_grid_index": [
+          51,
+          156
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "mslp_to_vorticity_km": 27.798731661139367,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.0004322726745158434,
+          "grid_index": [
+            51,
+            153
+          ],
+          "lat": -30.75,
+          "lon": 178.25
+        },
+        "path": [
+          {
+            "field_value": 0.00019138050265610218,
+            "grid_index": [
+              51,
+              156
+            ],
+            "lat": -30.75,
+            "lon": 179.0
+          },
+          {
+            "field_value": 0.0003254909534007311,
+            "grid_index": [
+              52,
+              155
+            ],
+            "lat": -31.0,
+            "lon": 178.75
+          },
+          {
+            "field_value": 0.0004321236629039049,
+            "grid_index": [
+              52,
+              154
+            ],
+            "lat": -31.0,
+            "lon": 178.5
+          },
+          {
+            "field_value": 0.0004322726745158434,
+            "grid_index": [
+              51,
+              153
+            ],
+            "lat": -30.75,
+            "lon": 178.25
+          }
+        ],
+        "seed_grid_index": [
+          51,
+          156
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "sid": "2021343S09155",
+      "storm": "RUBY",
+      "t4e36_inside_radius": 0,
+      "time": "2021-12-15 18:00:00"
+    },
+    {
+      "catalogue_position": {
+        "lat": -21.0,
+        "lon": 155.9
+      },
+      "catalogue_to_mslp_km": 67.47606810560387,
+      "catalogue_to_vorticity_km": 114.19012251317109,
+      "classification": "VERTICAL_QUANTITY_SEPARATION_CANDIDATE",
+      "mslp_basin": {
+        "centre": {
+          "field_value": 99319.3125,
+          "grid_index": [
+            12,
+            61
+          ],
+          "lat": -21.0,
+          "lon": 155.25
+        },
+        "path": [
+          {
+            "field_value": 99375.0625,
+            "grid_index": [
+              12,
+              64
+            ],
+            "lat": -21.0,
+            "lon": 156.0
+          },
+          {
+            "field_value": 99357.0625,
+            "grid_index": [
+              12,
+              63
+            ],
+            "lat": -21.0,
+            "lon": 155.75
+          },
+          {
+            "field_value": 99335.8125,
+            "grid_index": [
+              12,
+              62
+            ],
+            "lat": -21.0,
+            "lon": 155.5
+          },
+          {
+            "field_value": 99319.3125,
+            "grid_index": [
+              12,
+              61
+            ],
+            "lat": -21.0,
+            "lon": 155.25
+          }
+        ],
+        "seed_grid_index": [
+          12,
+          64
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 3
+      },
+      "mslp_to_vorticity_km": 181.66555536368196,
+      "negated_vorticity_basin": {
+        "centre": {
+          "field_value": 0.00022897496819496155,
+          "grid_index": [
+            12,
+            68
+          ],
+          "lat": -21.0,
+          "lon": 157.0
+        },
+        "path": [
+          {
+            "field_value": 0.00017741695046424866,
+            "grid_index": [
+              12,
+              64
+            ],
+            "lat": -21.0,
+            "lon": 156.0
+          },
+          {
+            "field_value": 0.00019783154129981995,
+            "grid_index": [
+              12,
+              65
+            ],
+            "lat": -21.0,
+            "lon": 156.25
+          },
+          {
+            "field_value": 0.0002153255045413971,
+            "grid_index": [
+              12,
+              66
+            ],
+            "lat": -21.0,
+            "lon": 156.5
+          },
+          {
+            "field_value": 0.00022533908486366272,
+            "grid_index": [
+              12,
+              67
+            ],
+            "lat": -21.0,
+            "lon": 156.75
+          },
+          {
+            "field_value": 0.00022897496819496155,
+            "grid_index": [
+              12,
+              68
+            ],
+            "lat": -21.0,
+            "lon": 157.0
+          }
+        ],
+        "seed_grid_index": [
+          12,
+          64
+        ],
+        "status": "CENTRE_FOUND",
+        "steps": 4
+      },
+      "sid": "2021358S09130",
+      "storm": "SETH",
+      "t4e36_inside_radius": 0,
+      "time": "2021-12-31 18:00:00"
+    }
+  ],
+  "schema": "t4e38-reference-alignment/v1",
+  "sources": {
+    "mslp_record_receipt": "data/wrapped_records/t4e38/4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8.json",
+    "mslp_record_receipt_sha256": "4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8",
+    "t4e36_measurement": "measurements/t4e36_wrapped_join.json",
+    "t4e36_measurement_file_sha256": "c58f75786174508a27d974c8ea8c72e5919485ee9fdccbd36b48bd51fd0ac48c",
+    "vorticity_record_receipt": "data/wrapped_records/t4e36/509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99.json",
+    "vorticity_record_receipt_sha256": "509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99"
+  }
+}

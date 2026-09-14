@@ -34,6 +34,7 @@ class Operation:
     name: str
     description: str
     requirements: Tuple[Requirement, ...]
+    planning_path: Optional[Mapping[str, str]] = None
 
 
 def _need(fact: str, label: str, unavailable: str, unknown: str,
@@ -51,7 +52,10 @@ OPERATIONS: Dict[str, Operation] = {
                   "The first safe recipe uses a row-random generate/confirm split and is only "
                   "admissible for independent samples. Grouped data need group-held-out "
                   "confirmation; ordered data need blocked and embargoed confirmation.",
-                  "Declare whether samples are independent, grouped or ordered."),)),
+                  "Declare whether samples are independent, grouped or ordered."),),
+        planning_path={"api_path": "/api/v1/ingress/plan",
+                       "plan_schema": "spectral.representation-audit-plan.v1",
+                       "workspace": "acquire"}),
     "redundancy_structure_audit": Operation(
         "Redundancy Structure Audit",
         "Frozen-family candidate redundancy and complementarity map.", (
@@ -62,7 +66,10 @@ OPERATIONS: Dict[str, Operation] = {
                   "This recipe uses conditional permutations of exchangeable rows. Grouped "
                   "data need group-held-out benchmarked nulls; ordered data need blocked and "
                   "embargoed benchmarked nulls.",
-                  "Declare whether samples are independent, grouped or ordered."),)),
+                  "Declare whether samples are independent, grouped or ordered."),),
+        planning_path={"api_path": "/api/v1/ingress/structure/plan",
+                       "plan_schema": "spectral.redundancy-structure-plan.v1",
+                       "workspace": "acquire"}),
     "conditional_information_audit": Operation(
         "Conditional-Information Audit",
         "Frozen-family conditional association given one declared nuisance.", (
@@ -77,7 +84,10 @@ OPERATIONS: Dict[str, Operation] = {
             _need("declared_nuisance", "researcher-declared nuisance",
                   "This bounded recipe requires exactly one numeric column explicitly "
                   "declared as nuisance.",
-                  "Declare whether one column has the nuisance role."),)),
+                  "Declare whether one column has the nuisance role."),),
+        planning_path={"api_path": "/api/v1/ingress/conditional/plan",
+                       "plan_schema": "spectral.conditional-information-plan.v1",
+                       "workspace": "acquire"}),
     "stable_subspace_generation": Operation(
         "Stable-Subspace Generation",
         "Generate bounded linear candidate spans on a reserved generate partition.", (
@@ -88,7 +98,10 @@ OPERATIONS: Dict[str, Operation] = {
                   "This recipe reserves a row-random confirmation partition and is only "
                   "admissible for independent samples. Grouped data need group-held-out "
                   "generation/confirmation; ordered data need blocked and embargoed splits.",
-                  "Declare whether samples are independent, grouped or ordered."),)),
+                  "Declare whether samples are independent, grouped or ordered."),),
+        planning_path={"api_path": "/api/v1/ingress/subspace/plan",
+                       "plan_schema": "spectral.stable-subspace-generation-plan.v1",
+                       "workspace": "acquire"}),
     "stable_subspace_confirmation": Operation(
         "Held-out Stable-Subspace Confirmation",
         "Apply a frozen generated span family once to reserved held-out samples.", (
@@ -257,6 +270,8 @@ def build_profile(*, kind: str, phase: str, identity: str,
                          for name, label in CORE_FACTS],
         "operations": {name: {"name": OPERATIONS[name].name,
                               "description": OPERATIONS[name].description,
+                              "planning_path": (dict(OPERATIONS[name].planning_path)
+                                                if OPERATIONS[name].planning_path else None),
                               **_decision(OPERATIONS[name], normalized)} for name in names},
         "basis": dict(basis or {}),
         "claim_boundary": (

@@ -24,6 +24,52 @@ the cost of a refactor, not for the cost of a platform.
 
 ## 0. Current position (2026-09-04, `ed-dev`)
 
+**NAMING COLLISION, recorded 2026-09-12. `TG19.1`-`TG19.5` are NOT phase G19.** Five engineering
+slices on the **atmospheric** line were named TG19.1 to TG19.5 on 2026-09-11 and appear under
+those names in `architecture.md`, `roadmap.md` and `VERIFICATION.md`. Because `TGxx.y` is this
+document's own phase-slice convention -- TG17.x, TG18.x -- those names read as "phase G19, slice
+x", and they are not. **Phase G19 below is now IN PROGRESS through its separate 2026-09-14
+implementation**; nothing in TG19.1-TG19.5 discharged G19.1-G19.5 or any part of them. What those
+five slices actually did:
+`coverage_report` made the coverage question runnable by a caller with their own field and
+extractor; a position-tolerance panel; a signed reference resolved by digest; a record holding
+two populations read by name; and a check of whether a declared prediction was ever falsifiable.
+The names are not rewritten because five commits already carry them and the documents would then
+disagree with the history.
+
+**Status note.** The atmospheric sequence and this cross-domain programme share one status
+table: `architecture.md` section 0. Nothing in the atmospheric work discharges G17's separate
+scale/shape declarations or its real-record curation requirements, and G19 remains specified
+and the current G19 status is reported in `architecture.md`. This document is task history and
+does not restate current state.
+
+**Exploratory apparatus, 2026-09-08 -- mutual k-NN alignment. NOT a G-phase task, not
+scheduled, and gating nothing.** `src/analysis_engine/representation_alignment.py` implements
+the metric the Platonic Representation Hypothesis (arXiv:2405.07987v5) uses to argue that
+neural representations are converging: each representation is reduced to a kernel over
+datapoints, and two are compared by the mean intersection of the k-NN sets they induce. It was
+written to audit that paper, not to enter this programme's inference layer, and it is recorded
+here because the audit bears directly on R19 and R20.
+
+The paper's claim is structural agreement between distance structures; its conclusion is
+convergence on a shared model of reality. **R19 says structural comparison never licenses
+semantic comparison, and that step is the paper's entire thesis.** **R20 is the second
+exposure**: no experiment in it contradicts the hypothesis, and its limitations are framed as
+refinements rather than as tests it could have failed. The module therefore carries
+`ALIGNMENT_BOUNDARY` on every report and `describe_measurement` returns `unresolved` when a
+value sits inside its own null.
+
+The paper states no reference for its headline cross-modal 0.16 -- `baseline`, `chance`,
+`null`, `shuffl*` and `surrogate` do not occur in its 27 pages -- but its Appendix C states
+k = 10 over 1024 samples, and the chance level of the metric is k/(n-1) in closed form. That
+is 0.00978, so 0.16 is about 16x chance and **the missing reference, once computed, supports
+the paper**. What the closed form cannot see is non-semantic pairing structure, and WIT is
+Wikipedia, where one article's image and caption share a subject; only a permuted pairing
+removes that. `permutation_null` implements it. No real-model measurement has been run, nothing
+has been downloaded, and doing so would open a second domain under R17 with its own cost.
+`VERIFICATION.md` carries the captured figures and `architecture.md` section 3.6zzf-alt the
+implementation.
+
 Maintained at the top so that the frontier does not have to be reconstructed from the five
 thousand lines below. `VERIFICATION.md` carries the captured output behind every figure here, and
 `architecture.md` describes what exists rather than what is planned.
@@ -40,8 +86,8 @@ gates in about 0.15 s without executing any of the measurements they read. On th
 |---|---|---|
 | `offline_matrix` | `NOT_RUN` | A run this call did not perform, not a measurement missing from the checkout. `execute_offline_qualification()` resolves it to the measured result: three calendar cells pass and three scale/shape cells are refused by the bespoke adapter. |
 | `restart_recovery` | `NOT_RUN` | The same kind of `NOT_RUN` as above. |
-| `browser_no_glue` | `PASS` | TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
-| `synthetic_fifth_adapter` | `PASS` | TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
+| `browser_no_glue` | `NOT_RUN` | **NOT_RUN as of 2026-09-09**: T4E.8 slice 4 added `e2e/identity-declaration.spec.ts`, edited `e2e/ui-qualification.spec.ts` and edited `frontend/src/App.tsx`, and the recorded evidence is bound to the source it was measured against. The gate returned itself to NOT_RUN, which is the binding working. Re-recording needs a full suite run (the last took 10.3 h). TG18.5 slice 4. Reads a recorded Playwright run bound to the source of every spec in the suite. |
+| `synthetic_fifth_adapter` | `NOT_RUN` | **NOT_RUN as of 2026-09-09**: T4E.8 slice 4 added `e2e/identity-declaration.spec.ts`, edited `e2e/ui-qualification.spec.ts` and edited `frontend/src/App.tsx`, and the recorded evidence is bound to the source it was measured against. The gate returned itself to NOT_RUN, which is the binding working. Re-recording needs a full suite run (the last took 10.3 h). TG17.13. A live source-edit audit plus a recorded acceptance run. Publishes a standing glue count of **1** that it deliberately does not block on. |
 | `calendar_calibration` | `PASS` | TG17.12. Reads a recording bound to the declared contract and to the source that decides what was measured. |
 | `scale_shape_calibration` | `REFUSED` | TG17.11, **superseded and not deleted** by TG17.15 slice 5. The old claim -- the null's resolvable sizes and its drawable sizes do not overlap, and no amount of compute closes the gap -- is recomputed on every plan and still holds. A successor null is calibrated and recorded. What still blocks: no declared manifest requests the calibrated inference, and pool exchangeability on real records is not decidable here. A refusal blocks release exactly as a failure does. |
 | `live_sources` | `PASS` | TG17.14. A dated four-domain run: ERA5/CDS, Argo GDAC and MAST SPOC each demonstrating network use, and the bespoke order-book record demonstrating **no** network use. |
@@ -102,7 +148,84 @@ it in and it is not a release. What would move it: a manifest that declares the 
 estimand, and an inventory of real records whose admission criterion is shown to hold rather than
 assumed.
 
-**Phase G19 is specified and not started.** A researcher meeting a refusal wants to interrogate it
+**TG17.15 slices 6-10 preserve that boundary while making the missing inventory actionable.** The
+successor declaration requests exact pool substitution; readiness measures 0 of 48 explicit
+profiles; source ingress binds exact local bytes to reviewed marginal methods; and slice 10 adds a
+portable batch-import manifest. Every source digest and every entry is preflighted before output,
+paths are confined to the manifest directory, duplicate sources and identities are refused, and a
+failed batch emits no profiles. It acquires nothing and awards neither admission nor
+exchangeability, so the inventory remains `NO_INVENTORY` until legitimate records are supplied.
+
+**Slice 11 adds the human curation boundary without crossing it.** A
+`g17-pool-curation-review/v1` declaration can record either `ESTABLISHED` or `NOT_ESTABLISHED`, but
+loads only after the live audit reaches `READY_FOR_CURATION_REVIEW` and only while a named adoption
+binds the declaration. The review pins the successor, admission contract, readiness assessment and
+complete record-ID list, and must name at least one unmeasured property. Editing one profile makes
+the review stale. No review or adoption is present, and loading one does not rewrite the frozen
+successor, so G17 remains withheld at 0 of 48.
+
+**Slice 12 reaches the external-data boundary and refuses the tempting shortcut.** A bounded MAST
+sector query found 48 exact public SPOC products at a predicted 97,873,920 bytes. Those targets
+were archive-available, not scientifically eligible: none overlapped the first 198 unique TOI
+hosts whose non-limit orbital periods, at or below 3.375 days, are declared independently by the
+NASA Exoplanet Archive and span at least eight cycles in a nominal 27-day sector. The arbitrary
+download was stopped. One TIC carrying two eligible TOI periods was refused rather than duplicated
+or assigned whichever phase was convenient. The next preflight joins those external periods to
+exact MAST products; no profile exists until that join, value quality, marginal methods and human
+adoption all clear separately. That join subsequently acquired 64 targets and 124,652,160 bytes.
+Every target cleared finite quality-zero flux and eight actual cycles, but the proposed AR(1)
+effective-sample-size and robust noise marginals admitted at most 43 alternatives under the frozen
+contract; zero records reached 48. The method remains `PROPOSED_NOT_ADOPTED`, so no profile was
+emitted. Ed Bentley subsequently adopted the exact method declaration as Creator on 2026-09-12;
+that adoption does not change the measured pool deficit or establish exchangeability.
+
+**Slice 13 closes the quantity deficit and stops at curation.** Incremental discovery excluded all
+64 previously acquired TICs and selected 48 new period-qualified SPOC products, predicting and
+acquiring 93,680,640 bytes. The two immutable receipts merge to 112 unique targets. Under the
+adopted methods, 67 records admit at least 48 alternatives; pool sizes are 0 / 60 / 73. Canonical
+quality-zero CSV records and 112 v3 profiles bind each exact transformed source, raw FITS digest
+and adopted review. Readiness is now `READY_FOR_CURATION_REVIEW`, shortfall zero, while
+exchangeability remains `NOT_ASSESSED`. No code path turns sufficient quantity into curation.
+
+**Slice 14 makes the curation choice coherent without making it.** The 112-profile admission graph
+is symmetric. Iterative pruning leaves a 65-record 48-core, and a deterministic dependency-free
+search finds a 59-record subset in which every pair clears the frozen marginal bands, so each
+record has 58 alternatives. The content-addressed packet binds the successor, readiness and
+admission contract and remains `NOT_ASSESSED`. Curation review v2 must bind this exact packet and
+subset; it cannot mark all 112 exchangeable merely because 112 profiles exist, and it cannot
+establish exchangeability from fewer than 49 pairwise-admissible records.
+
+**Slice 15 corrects the period lineage before human review.** The repeated TOI 1654.01 audit found
+that acquisition copied the final discovery target's period metadata onto every emitted target.
+The frozen catalogue and discovery rows were correct. Both receipts were rebuilt offline from
+those rows and SHA-256-verified cached FITS bytes; all 112 corrected mappings agree exactly. Eight
+records then fail the eight-native-cycle requirement, leaving 104 qualified profiles. The
+corrected assessment has 64 records with at least 48 alternatives and pool sizes 0 / 58.5 / 70.
+Iterative pruning leaves a 59-record core, and the deterministic search returns a 57-record
+all-pairs subset with 56 alternatives each. Contaminated evidence is retained under named
+`g17_tess_lineage_bug` archives. Exchangeability remains `NOT_ASSESSED`, and no review or adoption
+was created.
+
+**Slice 16 makes the human handoff exact without answering it.** A machine-prepared review request
+binds the corrected packet and all 57 recommended IDs, reports only verified marginal facts, and
+names both allowed conclusions plus the required basis, unknowns, limitations, attribution and
+typed affirmation. It has a distinct request schema, remains `AWAITING_HUMAN_REVIEW`, and is
+rejected by the adopted-review loader. No unavailable reviewer was impersonated.
+
+**Slice 17 makes the complete pool state visible and the human acts operable.** Platform Status
+now shows corrected readiness, all eight qualification refusals, the marginal assessment, exact
+57-record packet, pending request, adoption state and archived lineage-bug artifacts. The review
+and its adoption are separate forms with no supplied scientific defaults, and the server checks
+the live packet before writing either immutable record. Archive discovery/acquisition and offline
+evidence reconstruction remain CLI-only because they are bounded network/bulk-publication jobs;
+the UI states this limitation and displays their results.
+
+**Phase G19 is in progress.** Its usable single-study path was implemented on 2026-09-14: a
+researcher can interrogate a finding over several turns with the complete current study, runs and
+formal round table reloaded each time. Unlike the original recording-first specification, the
+conversation is ephemeral unless the researcher separately asks to save it. Whole-corpus record
+selection, provider-neutral budgeting and the generalised transcript-independence proof remain.
+A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
 most of what that needs; what it lacks is a conversation, and a conversation adds drift,
 staleness across turns and a transcript that is the most quotable and least reproducible artefact
@@ -130,18 +253,73 @@ may reach the network without the maintainer's explicit say-so.
   and is called a precursor at p = 0.01 by the scattering one, so the choice of null decides
   the finding and the receipt names which was drawn. A design that could not have rejected
   anything is refused before any counting happens, so an under-powered absence is never
-  produced to be read as a negative result. **This remains the larger outstanding body of
-  work in the repository** -- T4F.4-8 and all of 4G remain. 4G is gated behind T4F.6: if
-  nothing recognisable is recovered, the pipeline is presumed broken and 4G does not start.
-* Defects **D84** and **D85** are open and **D18** is partial. Ninety-two of ninety-five are
-  fixed. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
+  produced to be read as a negative result. **T4F.4 has now made both directions of that
+  table askable without making either of them a second test.** Top-down and bottom-up are one
+  selection: the direction fixes which role the queried pattern plays and which side of a
+  measured scale ordering its counterpart must sit on, and nothing is recomputed -- the
+  q-values are the report's own, corrected against the family declared before the record was
+  read, and the shortcut of narrowing that family afterwards is priced rather than warned
+  about, the same rule falling from q = 0.0417 to q = 0.0050 when it is. Coarse and fine come
+  from the catalogue's own member scales as an interval order, so patterns whose scale ranges
+  overlap or touch are withheld and counted rather than sorted, and the scale-invariant mode
+  is refused an ordering outright because it makes every pattern's scale statistic exactly
+  one. Ranked by how often it preceded the target -- the phrase the specification uses -- the
+  leading answer is a pattern the null did not distinguish; ranked by the corrected p-value it
+  is the planted precursor. **T4F.5 has now put that table back on the map.** A pattern
+  projects to a footprint -- the parent cells inside the transform's own filter support -- and
+  never to a pixel, because a detail coefficient peaks on a structure's flank: on the planted
+  vortex the peak cell is not the planted cell in a single one of twenty-four frames, and the
+  footprint recovers it only while the level that found the structure can still reach back to
+  it. Each grid gives what it has and refuses the rest, and a rule's historical instances come
+  from the same per-anchor decision its support was counted with, reconciled against its
+  published figures before they are shown. **T4F.6 has now built the gate that stands between
+  all of this and Phase 4G, and has not run it.** A pattern is labelled against a declared
+  catalogue of known phenomena as `recognised`, `unrecognised` or `unassessable`, the third
+  being the label that stops an instrument's blindness from being recorded as a fact about the
+  atmosphere; the gate reaches PASS, FAIL and INVALID on the same real patterns, refuses to
+  adjudicate under a catalogue no maintainer has signed, and returns INVALID rather than PASS
+  when the catalogue excluded nothing, because recognition by imprecision is this task's own
+  failure mode. **This remains the larger outstanding body of work in the repository.** The
+  T4F.6 gate run and all of 4G remain, and 4G is still gated: the acceptance needs a
+  maintainer-frozen catalogue, a documented cyclogenesis event declared with its source, and a
+  real mining pass over the acquired 8,764-frame ERA5 record that has never been performed.
+  T4F.5's own second acceptance clause waits on the same run. **T4F.7 is DONE**: a rule is
+  re-tested in every declared held-out region and labelled `regional` or `general`, with a
+  region that never carried the pattern reported as not having taken the test rather than as
+  having failed it, and with `general` refused while the identity was fitted on held-out ground,
+  while the regions' independence is unestablished, or while every region assessed is of one
+  declared physiography. It has been exercised on a synthetic record only. **T4F.8 is DONE**:
+  the platform's two existing follow-up proposers are optimisers -- they propose the parameter
+  range or the category that made the metric better, so no outcome of the proposed run would
+  retract the finding that prompted it -- and this task adds the refutable kind. A re-test is
+  proposed only on ground the finding was not made on, only for a rule that cleared its own
+  null, and only where the identity was not fitted on the target; it carries a prediction
+  digested before the target record is read and a named statistic, direction and threshold that
+  would retract it, and is refused when that condition is one no outcome could satisfy. A rule
+  that did not clear its null gets a power proposal instead, which carries no prediction and can
+  confirm nothing, and which is refused when the study already carried the occurrences the
+  effect needed -- a negative from an adequately powered study is a result. The occurrence count
+  a design needs is computed from quantities the record can be read for without counting the
+  pair under test, and it must be enough to confirm and enough to retract. No proposal has been
+  run.
+* Defects **D84**, **D85**, **D96** and **D97** are open and **D18** is partial. Ninety-two of ninety-seven are
+  fixed. **`PLAN.md` orders what remains across both lines**; this document is the cross-domain
+  task history. **D97 gates the science line and D96 is downstream of it.** **D96 is the one that gates Phase 4G**: `cluster_signatures` is complete-linkage
+  agglomerative implemented directly, measured at about O(n^3) on real signatures from the
+  acquired record -- 5.5 s at n=50, 347 s at n=200 -- and the training period of that record
+  presents about 843,000 constellations. Extrapolated at exponent 3 that is
+  800,000 years. Every test in the repository clusters tens of points and no document
+  stated the cost anywhere, so it was never known to be the binding constraint. The mining
+  pass T4F.6's gate waits on is therefore not merely unperformed: on the current identity
+  step it cannot be performed, and a replacement changes what a pattern *is* and needs its
+  own task and its own acceptance. This session found three: **D93** (a time unit dropped at the T4E.2 signing seam, T4F.1),
   **D94** (a cache key republished as a `sha256`) and **D95** (untimestamped SPOC cadences), the
   last two by TG17.14's first contact with real archives.
-* The last measured **full backend run is 3,978 passed, 4 skipped, 1 xfailed**, exit 0, on
-  2026-09-05 in 0:52:09 -- the tree carrying T4F.3. It replaces the 3,926 measured after T4F.2
-  and the 3,893 after TG17.15 slice 5. The rise is exactly 52: the 47 test
-  functions T4F.3 added, one of them parametrised six ways, so nothing was lost in between, and this run had nothing else competing for the
-  machine. Do not quote a larger figure without running the suite again.
+* The last measured **full backend run is 4,348 passed, 4 skipped, 1 xfailed**, exit 0,
+  on 2026-09-08 in 0:42:20 -- the tree carrying T4E.6. It replaces the 4,294 measured after
+  T4F.8 and the 4,244 after T4F.7. The rise is exactly 54: 29 cases from T4E.5's
+  suite, 22 from T4E.6's and 3 new documentation guards, so nothing was lost in between. Do
+  not quote a larger figure without running the suite again.
 
 **Two habits this line holds to, because both were learned by being caught out.** A guard that
 passes because it cannot see what it is checking has now been met five times (D64, D74, D75, and
@@ -154,7 +332,7 @@ measures the machine.
 ## 1. Relationship to SpectralEarth, and the claim boundary
 
 SpectralEarth is a rigorous atmospheric research instrument. It continues independently under
-`master` for Adam's use and extension, and this line must not destabilise it.
+`master` for downstream use and extension, and this line must not destabilise it.
 
 This is a **fork, not a successor.** The two lines share history to `bce1afc` and share the
 standing rules R1--R16 and standards E1--E11 in `roadmap.md`, which are inherited here in full
@@ -3616,9 +3794,10 @@ acquisition shape: per-target, sector-based.
 
 **Delivered.** An exact TIC and bounded sector family now enter a metadata-only preflight before
 any value transfer. Product and byte caps, archive URI, filename, sector and declared size are
-sealed into the plan. Acquisition reads checksum-valid calibrated SPOC LC FITS, validates TIC,
-BJD_TDB and ICRS position, retains quality flags, hashes every source byte and every admitted
-sample, and publishes canonical no-overwrite collection bytes. The `angular_sky` point geometry
+sealed into the plan. Acquisition reads calibrated SPOC LC FITS, records each HDU's checksum
+status, validates TIC, BJD_TDB and ICRS position, retains quality flags, hashes every source byte
+and every admitted sample, and publishes canonical no-overwrite collection bytes. The
+`angular_sky` point geometry
 records great-circle degrees without entering raster geometry recognition. API and Acquire UI
 surfaces expose the refusal boundary. Synthetic FITS acceptance and collision mutations pass;
 the live MAST metadata service exceeded its 45-second bound during this slice, so live acceptance
@@ -3675,6 +3854,22 @@ authoritative refusals rather than trusting browser state.
 and ordered declarations while using a row-random split. It now plans only independent samples.
 Grouped rows explicitly require group-held-out confirmation; ordered rows require blocked and
 embargoed confirmation. Neither dependency structure is silently broken to make the recipe run.
+
+**TG15.3 Object-to-planner handoff. DONE (2026-09-12, `ed-dev`).** The central operation registry
+now supplies machine-readable planning destinations for the four sample-table operations with
+implemented planners. A content-addressed `spectral.sample-table-planning-handoff.v1` envelope
+re-derives and binds the exact file identity, explicit declaration, capability-profile digest,
+selected operation, existing route and expected plan schema. Unavailable operations and operations
+without a registered planner are refused. The browser follows the destination through the
+existing planner and checks its returned schema and file digest before continuing in the existing
+audit/subspace controls. The handoff has no automatic actions, executes no analysis, moves no
+evidence rung and creates no project-specific workspace.
+
+**Startup consistency correction (D102, 2026-09-12).** The running VS Code backend reported
+network disabled although `.env.local` explicitly enabled it. Only `start_platform.ps1` loaded
+that file; direct Uvicorn and the VS Code task did not. The backend now loads the repository-local
+file itself before adapter imports, preserves every process-supplied variable, reports no secret
+values and provides an explicit opt-out for isolated tests and deployments.
 
 #### Phase G16 — Representation Structure — **COMPLETE**
 
@@ -5963,7 +6158,10 @@ Any of these is a result. The first would mean scale/shape alignment is a descri
 testable mode, which is worth knowing and worth stating plainly.
 
 
-### Phase G19 - The researcher's conversation with the record - **NOT STARTED**
+### Phase G19 - The researcher's conversation with the record - **IN PROGRESS**
+
+**The single-study, ephemeral-by-default path is implemented. The atmospheric slices named
+`TG19.1`-`TG19.5` remain unrelated to it; see the naming collision recorded in section 0.**
 
 G7 gives the platform an adversarial review layer that argues with a finding. G19 asks the
 adjacent question: a researcher meeting a `REFUSED` gate or a corrected q-value wants to
@@ -6053,6 +6251,16 @@ not an invitation for a chunker to guess which paragraphs mattered.
 *   **G19.5 - the rendering.** The transcript displayed with its non-reproducibility and its claim
     boundary attached to every turn, so the most quotable artefact is also the most clearly
     labelled. R22's structural defence carried into the interface, not restated as a caption.
+
+**Implemented 2026-09-14 — bounded first delivery.** Findings exposes “Discuss this finding” for
+one selected published study. Context and answer routes write nothing; the transcript remains in
+browser memory. Each answer reloads the complete bundle, derived and translated finding, matching
+run summaries, and complete formal review, and requires the client's pinned current bundle digest.
+The UI labels the chat “Private for now · not recorded,” requires explicit approval for every paid
+call, displays sources and cautions, and makes saving a separately confirmed action. A saved copy
+is content-addressed, exact-revision-bound, and labelled interpretation rather than evidence.
+This partially delivers G19.1, G19.2 and G19.5. It does not claim G19.3 or G19.4 complete and does
+not yet provide the final provider-neutral append-only chain or per-conversation budget.
 
 **What would falsify this phase, stated in advance.**
 

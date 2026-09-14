@@ -26,6 +26,10 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+# Test behavior must not depend on a developer's ignored machine-local credentials or network
+# opt-in. The loader has its own isolated mapping tests in test_api_infrastructure.py.
+os.environ.setdefault("SPECTRALEARTH_LOAD_LOCAL_ENV", "0")
+
 from src.database.session import Base, get_db  # noqa: E402
 
 

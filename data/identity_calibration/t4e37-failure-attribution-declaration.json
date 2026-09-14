@@ -1,0 +1,64 @@
+{
+  "schema": "t4e37-failure-attribution-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.37",
+  "artefact": "a fixed-population diagnostic separating sampled-field/reference displacement from filtering by the unchanged raw-field extractor",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Codex at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-13",
+  "why_this_exists": {
+    "result_so_far": "T4E.36 added eastward support and improved raw condition 1 from 3 of 18 to 5 of 18, but failed the frozen 9-of-18 gates at 5 of 18 and 0 of 18.",
+    "remaining_ambiguity": "A published feature outside an agency radius can mean either that the sampled 850 hPa vorticity field has no local maximum inside that surface-centre radius, or that such a maximum exists but the calibrated extractor filters, suppresses or cannot localise it.",
+    "question": "Among the 13 fixed T4E.36 condition-1 failures, which side of that pre-threshold distinction accounts for a strict majority?"
+  },
+  "source_evidence": {
+    "wrapped_join": "measurements/t4e36_wrapped_join.json",
+    "wrapped_join_file_sha256": "c58f75786174508a27d974c8ea8c72e5919485ee9fdccbd36b48bd51fd0ac48c",
+    "wrapped_join_receipt_sha256": "5d84935047e4ea60b2f092ba093bf5992d2685f1b40813e76d7dcfb17a5dd408",
+    "wrapped_record_receipt": "data/wrapped_records/t4e36/509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99.json",
+    "wrapped_record_receipt_file_sha256": "964a02973ea015c7e67c9fab5ec39d6b8ba7ceaec0e10e9197e6aae055c8554c",
+    "wrapped_record_receipt_sha256": "509e42f7554c6357c67509af7d5c0504c4fafc8cc74f5a6ecf633f52f6afdd99",
+    "wrapped_record_sha256": "9e9b7e50c75579daa4a79cb459e5da91c2b65a23c260eab6ca37fee2c684736b"
+  },
+  "frozen_population": {
+    "selection": "Exactly the T4E.36 raw-field rows whose inside_radius is zero. Passing rows are not reclassified and the catalogue is not reopened.",
+    "expected_rows": 13,
+    "identities": [
+      ["2018027S11156", "2018-01-31 12:00:00", "FEHI"],
+      ["2018064S16172", "2018-03-12 00:00:00", "HOLA"],
+      ["2018070S10160", "2018-03-15 00:00:00", "LINDA"],
+      ["2018082S12164", "2018-03-28 06:00:00", "IRIS"],
+      ["2018089S18172", "2018-04-03 00:00:00", "JOSIE"],
+      ["2018334S09156", "2018-12-17 00:00:00", "OWEN"],
+      ["2018363S12145", "2019-01-08 18:00:00", "PENNY"],
+      ["2019042S17162", "2019-02-23 00:00:00", "OMA"],
+      ["2021029S16171", "2021-02-01 06:00:00", "ANA"],
+      ["2021058S14149", "2021-03-07 06:00:00", "NIRAN"],
+      ["2021099S15159", "2021-04-12 06:00:00", "UNNAMED"],
+      ["2021343S09155", "2021-12-15 18:00:00", "RUBY"],
+      ["2021358S09130", "2021-12-31 18:00:00", "SETH"]
+    ]
+  },
+  "frozen_diagnostic": {
+    "field": "The same negated 850 hPa relative-vorticity frame used by the T4E.36 raw-field path.",
+    "sampled_candidate": "A finite native-grid sample equal to the maximum of its 3x3 neighbourhood, using the local_maximum extractor's own pre-threshold candidate rule.",
+    "boundary": "Exclude the outermost grid row and column, matching the extractor's declared boundary_margin=1. The 140..220 longitude axis is not periodic.",
+    "ties": "Retain every tied maximum exactly as the extractor's >= candidate rule does; do not break ties using distance to the catalogue centre.",
+    "position": "Use the native latitude and longitude of the grid sample. Do not interpolate or fit a centre.",
+    "distance": "Use the existing catalogue_join.great_circle_km and each row's unchanged agency radius. No new tolerance is introduced.",
+    "extractor_reproduction": "Rerun the unchanged identity representation with negation, n_surrogates=99 and seed=1234, and refuse unless feature count, sorted distances and inside-radius count reproduce the T4E.36 row.",
+    "reported_for_each_row": "Catalogue radius; nearest and all inside-radius sampled maxima; their field values and whether each clears the calibrated threshold; published extractor nearest distance; calibration threshold and rejection counts."
+  },
+  "classification_declared_before_measurement": {
+    "EXTRACTOR_FILTERING_CANDIDATE": "At least one pre-threshold sampled local maximum lies inside the unchanged agency radius while no published extracted feature does.",
+    "FIELD_REFERENCE_SEPARATION_CANDIDATE": "No pre-threshold sampled local maximum lies inside the unchanged agency radius.",
+    "decision": "With 13 binary rows, EXTRACTOR_FILTERING_DOMINANT means at least 7 EXTRACTOR_FILTERING_CANDIDATE rows; FIELD_REFERENCE_SEPARATION_DOMINANT means at least 7 FIELD_REFERENCE_SEPARATION_CANDIDATE rows. A refusal leaves the diagnostic INVALID rather than assigning a row by default.",
+    "no_success_gate": "This is mechanism attribution after a failed gate, not a replacement acceptance. Neither outcome is PASS and neither can rescue T4E.36."
+  },
+  "governing_rules": [
+    "The declaration must have a current digest-bound human adoption before the real wrapped record is opened for this diagnostic.",
+    "No network access is used and the 2022-2023 forecast-test period remains unopened.",
+    "Do not change the extractor, null, alpha, seed, catalogue radii, population, record or crop.",
+    "The sampled maxima are diagnostic candidates, not significant features and not cyclone identities."
+  ],
+  "claim_boundary": "The result can distinguish whether the unchanged sampled field offers any native-grid local maximum inside each existing agency radius before the existing extractor's significance, localisation and suppression stages. It cannot identify a maximum as the cyclone, establish that pressure-level/surface quantity separation caused an offset, validate or invalidate the extractor, approve a tolerance or mining radius, rescue T4E.36, demonstrate kind recurrence, or make a claim about the atmosphere."
+}

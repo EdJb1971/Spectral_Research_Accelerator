@@ -1,0 +1,80 @@
+{
+  "measurement": "t4e18_vorticity_probe",
+  "what_was_done": "Two months of 850 hPa relative vorticity (2018-02, 2018-03) were acquired as a probe before the declared 2018-2021 request, and acceptance condition 1 was tested on the four storms they contain. 14 MB, about 100 seconds of CDS queue.",
+  "why_a_probe_first": "The full request is about 230 MB and 1.6 hours of queue. Testing the hypothesis on two months costs 6% of the data and 2% of the time, and T4E.17 was the lesson: a record acquired without asking whether it can support the evaluation is a record that cannot.",
+  "credentials": "Read from an untracked, gitignored .env.local into the acquiring process only. Never printed, never recorded, never committed. Endpoint verified as the current CDS API rather than the retired v2.",
+  "the_variable_works": {
+    "verdict": "CONFIRMED. Relative vorticity puts a strong, localised, correctly-signed signal at the catalogue position.",
+    "gita_2018_02_13_12": {
+      "vo_at_storm": -0.001226,
+      "percentile_of_frame": 0.02,
+      "frame_most_cyclonic": -0.001518,
+      "distance_from_storm_to_frame_minimum_cells": 1
+    },
+    "hola_2018_03_09_18": {
+      "vo_at_storm": -0.0002924,
+      "percentile_of_frame": 0.16
+    },
+    "linda_2018_03_13_12": {
+      "percentile_of_frame": 2.32
+    },
+    "iris_2018_03_27_06": {
+      "percentile_of_frame": 1.2
+    },
+    "reading": "A tropical cyclone sits in the most cyclonic 0.02 to 2.3 per cent of its frame, and for GITA the frame's single most cyclonic cell is ONE grid cell from the catalogue position. The sign convention declared before acquisition is correct: negating makes cyclonic rotation a positive peak."
+  },
+  "but_the_join_still_fails_and_the_reason_is_the_crop": {
+    "verdict": "FAILED acceptance condition 1, for a reason that is not the variable.",
+    "storms_with_a_feature_inside_their_catalogue_radius": "0 of 4",
+    "nearest_feature_km": {
+      "GITA": 1853.9,
+      "HOLA": 59.1,
+      "LINDA": 107.5,
+      "IRIS": 201.0
+    },
+    "the_cause": "These storms sit at latitude -20.2 to -21.1 and the crop's northern edge is -20.0, so they are one to four grid cells from the boundary. The extractor refuses edge features by design -- a maximum on the very edge has no neighbourhood to be maximal over -- and on the GITA frame 34 features were rejected as outside_valid_interior.",
+    "the_crop_is_wrong_for_this_purpose": "Of 917 South Pacific cyclone observations in longitude 140-180 over 2018-2021, 707 lie NORTH of -20 and are excluded entirely. The crop keeps 210, whose median latitude is -23.3 and of which 74 sit within 2 degrees of the northern edge. The record was built for a New Zealand FORECAST experiment, not for cyclone identity, and the two purposes want different domains."
+  },
+  "the_alternative_and_its_cost": {
+    "candidate_boxes": [
+      {
+        "lat": "-60..-20 (current)",
+        "observations": 210,
+        "with_radius": 176,
+        "storms": 18,
+        "interior_observations": 113,
+        "cross_storm_pairs": 10721,
+        "nature_base_rate": 0.571
+      },
+      {
+        "lat": "-45..-5",
+        "observations": 908,
+        "with_radius": 684,
+        "storms": 30,
+        "interior_observations": 683,
+        "cross_storm_pairs": 164450,
+        "nature_base_rate": 0.872
+      },
+      {
+        "lat": "-40..0",
+        "observations": 900,
+        "with_radius": 680,
+        "storms": 30,
+        "interior_observations": 678,
+        "cross_storm_pairs": 163880,
+        "nature_base_rate": 0.875
+      }
+    ],
+    "the_geometry_improves_enormously": "Moving the box north, at the same 161-pixel shape and 40-degree span the crop planner already assessed, takes the population from 18 storms to 30 and from 113 interior observations to 683.",
+    "THE_KIND_LABEL_DEGRADES": "The NATURE base rate rises from 0.571 to 0.872, because at tropical latitudes almost every system is TS. A rule answering 'same kind' to everything would be right 87 per cent of the time. The label that discriminates usefully in the southern box is close to degenerate in the northern one.",
+    "this_is_a_decision_and_not_an_optimisation": "Choosing whichever box flatters a later result is exactly the horse race every declaration in this sequence forbids. The trade-off is recorded and put to the maintainer rather than resolved here."
+  },
+  "what_this_costs_the_signed_catalogue": "The T4E.17 catalogue design was SIGNED on terms that name the record's own crop and report 18 storms at a NATURE base rate of 0.571. A different crop is a different evidence base: the population, the base rate and the refusal counts all change, so the signature would have to be re-given on the new terms rather than carried over.",
+  "what_was_NOT_done": [
+    "The full 2018-2021 acquisition was not run. Acquiring 230 MB on a crop that cannot support the evaluation is the mistake this probe exists to prevent.",
+    "No criterion was evaluated and none is declared.",
+    "No frame of the 2022-2023 forecast-test period was requested or opened.",
+    "The existing temperature record is untouched at content_hash e488f5c3d480f072c834dceae1eeea2a."
+  ],
+  "claim_boundary": "A probe settles what a record could support, not anything about the atmosphere. No frame of the 2022-2023 forecast-test period was acquired or opened."
+}

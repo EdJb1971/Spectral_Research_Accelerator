@@ -15,6 +15,7 @@ from src.data_layer.dataset_ingress import (SampleTableDeclaration,
                                             freeze_external_subspace_transfer,
                                             freeze_stable_subspace_confirmation,
                                             plan_conditional_information_audit,
+                                            plan_sample_table_handoff,
                                             plan_redundancy_structure_audit,
                                             plan_representation_audit,
                                             plan_stable_subspace_generation,
@@ -123,6 +124,24 @@ async def capabilities(file: UploadFile = File(...), delimiter: str = Form(","),
         return sample_table_capability_profile(
             payload, filename=file.filename or "upload", delimiter=delimiter,
             declaration=SampleTableDeclaration(**declared))
+    except TypeError:
+        raise HTTPException(status_code=400,
+                            detail="Declaration needs roles, sample_relationship and units.")
+    except SpectralEarthError as error:
+        raise _handle(error)
+
+
+@router.post("/planning-handoff")
+async def planning_handoff(file: UploadFile = File(...), delimiter: str = Form(","),
+                           declaration: str = Form(...),
+                           operation: str = Form(...)) -> Dict[str, Any]:
+    """Bind an exact declared object to one registered planner without executing it."""
+    payload = await file.read()
+    declared = _object(declaration, "declaration")
+    try:
+        return plan_sample_table_handoff(
+            payload, filename=file.filename or "upload", delimiter=delimiter,
+            declaration=SampleTableDeclaration(**declared), operation=operation)
     except TypeError:
         raise HTTPException(status_code=400,
                             detail="Declaration needs roles, sample_relationship and units.")

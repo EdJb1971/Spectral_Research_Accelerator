@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, MessageSquare, Receipt, RefreshCw } from 'lucide-react';
 import { apiService } from '../services/api';
+import ConvenePanel from './ConvenePanel';
 import * as types from '../types/api';
 
 interface Props {
@@ -41,11 +42,12 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
     <div className="space-y-5" aria-busy={busy}>
       <header>
         <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-          <MessageSquare size={18} aria-hidden="true" /> Recorded review
+          <MessageSquare size={18} aria-hidden="true" /> Expert round table
         </h3>
         <p className="text-sm text-slate-400 max-w-3xl mt-1">
-          Inspect the adversarial exchange recorded beside one exact evidence revision. This
-          workspace contains argument, not evidence and not permission to make a claim.
+          Ask a structured panel of specialist roles to challenge a published study, then revisit
+          the transcript and panel summary here. A discussion can expose weaknesses, but it does
+          not change the study's evidence status by itself.
         </p>
       </header>
 
@@ -53,32 +55,38 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
         <div className="flex-1">
           <label htmlFor="review-study-id"
             className="block text-xs uppercase tracking-wide text-slate-400 mb-1">
-            Published study ID
+            Study to discuss
           </label>
           <input id="review-study-id" type="text" value={selectedStudyId}
             onChange={(event) => onStudyId(event.target.value)}
-            placeholder="Select a study in Findings or enter its ID"
+            placeholder="Choose a study from the dashboard or enter its ID"
             className="w-full rounded bg-slate-800 px-3 py-2 text-sm text-slate-100" />
         </div>
         <button type="button" onClick={() => void load()} disabled={busy || !selectedStudyId.trim()}
           className="flex items-center justify-center gap-2 rounded bg-slate-800 px-3 py-2 text-sm
                      text-slate-200 hover:bg-slate-700 disabled:opacity-50">
-          <RefreshCw size={14} aria-hidden="true" /> Reload exact revision
+          <RefreshCw size={14} aria-hidden="true" /> Refresh discussion
         </button>
       </div>
 
       {!selectedStudyId.trim() && (
         <p className="rounded border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-400">
-          No study selected. That is not the same as no review existing.
+          Choose a published study from the dashboard, or enter its study ID above.
         </p>
       )}
-      {busy && <p role="status" className="text-sm text-slate-400">Loading recorded review…</p>}
+      {busy && <p role="status" className="text-sm text-slate-400">Loading discussion…</p>}
 
       {surface && (
         <>
+          {/* T4E.33. The workspace described an exchange that could only be run from a terminal.
+              For a single-maintainer instrument that is a barrier, not a safeguard: the
+              authorisation moves into a deliberate control beside the button rather than out of
+              the system, and the key stays in the server's environment. */}
+          <ConvenePanel studyId={surface.study_id} onError={onError} onRan={() => void load()} />
+
           <section aria-label="Recorded-not-reproducible boundary"
             className="rounded border-2 border-amber-700/70 bg-amber-950/30 p-4">
-            <h4 className="text-sm font-semibold text-amber-200">Recorded, not reproducible</h4>
+            <h4 className="text-sm font-semibold text-amber-200">About this discussion</h4>
             <p className="mt-2 text-sm text-amber-100">{surface.declaration}</p>
             <p className="mt-2 text-sm font-semibold text-amber-200">{surface.claim_boundary}</p>
             <p className="mt-3 text-xs text-amber-300/80">
@@ -105,7 +113,7 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
             <article key={review.record.record_sha256}
               className="rounded border border-slate-700 bg-slate-900/60 p-4 space-y-5">
               <header>
-                <h4 className="font-semibold text-slate-100">Recorded exchange</h4>
+                <h4 className="font-semibold text-slate-100">Discussion transcript</h4>
                 <p className="text-xs text-slate-500 mt-1">
                   {review.file} · {review.record.calls.length} recorded calls · record{' '}
                   <Digest>{review.record.record_sha256}</Digest>
@@ -119,10 +127,10 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
               </section>
 
               <section aria-label="Recorded round-robin outcomes" className="space-y-3">
-                <h5 className="text-sm font-semibold text-slate-200">Round-robin outcome</h5>
+                <h5 className="text-sm font-semibold text-slate-200">Panel summary</h5>
                 {review.outcomes.length === 0 ? (
                   <p className="text-sm italic text-slate-500">
-                    No completed outcome recorded. That is not evidence that no exchange occurred.
+                    This discussion does not yet have a completed panel summary.
                   </p>
                 ) : review.outcomes.map((entry) => (
                   <pre key={entry.file}
@@ -135,11 +143,11 @@ export default function ReviewView({ selectedStudyId, onStudyId, onError }: Prop
 
               <section aria-label="Recorded review cost receipts" className="space-y-3">
                 <h5 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Receipt size={14} aria-hidden="true" /> Route and token receipts
+                  <Receipt size={14} aria-hidden="true" /> Usage details
                 </h5>
                 {review.cost_receipts.length === 0 ? (
                   <p className="text-sm italic text-slate-500">
-                    No cost receipt recorded. That is not the same as the review costing nothing.
+                    No usage record was saved for this discussion.
                   </p>
                 ) : review.cost_receipts.map(({ file, receipt }) => (
                   <div key={file} className="rounded border border-slate-800 bg-slate-950 p-3">

@@ -54,12 +54,9 @@ if ($installDeps -eq "y" -or $installDeps -eq "Y") {
 
 # ---------------------------------------------------------------- Local environment
 # .env.local holds machine-local secrets and opt-in flags (GEMINI_API_KEY,
-# SPECTRALEARTH_ALLOW_NETWORK). Nothing in the Python source loads it: the backend reads
-# os.getenv directly (zarr_source.network_enabled) and python-dotenv is not a dependency.
-# Vite does not load it either - it reads env files from frontend/ and only exposes
-# VITE_-prefixed names to the browser. The launcher is therefore what makes the file real,
-# by promoting it into this process's environment, which the uvicorn job and `npm run dev`
-# both inherit as child processes.
+# SPECTRALEARTH_ALLOW_NETWORK). The backend also loads it directly, so direct Uvicorn and VS Code
+# starts agree with this launcher. Loading it here keeps child tools consistent too. Vite reads
+# env files from frontend/ and only exposes VITE_-prefixed names to the browser.
 #
 # A variable already set in the calling shell wins over the file, so a one-off override
 # still works without editing anything.

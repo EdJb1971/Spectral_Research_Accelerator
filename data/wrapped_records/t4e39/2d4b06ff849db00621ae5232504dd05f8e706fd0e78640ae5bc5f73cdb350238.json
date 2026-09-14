@@ -1,0 +1,356 @@
+{
+  "adoption": {
+    "adopted": true,
+    "adopted_by": "Ed Bentley",
+    "adopted_on": "2026-09-13",
+    "adoption_file": "t4e39-reference-holdout-adoption.json",
+    "adopts_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+    "declaration": "t4e39-reference-holdout-declaration.json",
+    "declaration_exists": true,
+    "declaration_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+    "required_affirmation": "I have read this declaration and I adopt it",
+    "signature_still_reaches_the_declaration": true
+  },
+  "census": "measurements/t4e39_reference_holdout_census.json",
+  "census_receipt_sha256": "f8734e65b2bbc49d5c087ccc5015b4988fcc0f95dc997ce328ee72fc1fb0bc7e",
+  "claim_boundary": "A future result can state whether the deterministic T4E.38 MSLP-closer majority recurs on the selected 2022-2023 temporal holdout under the same finite-census rule. It cannot establish statistical generalisation, independence from ERA5 assimilation, cyclone identity, vertical tilt or pressure/surface separation, validate IBTrACS or either field, approve a radius or extractor change, rescue T4E.36 or T4E.8, demonstrate recurrence, or make an atmospheric claim.",
+  "declaration": "data/identity_calibration/t4e39-reference-holdout-declaration.json",
+  "declaration_sha256": "fc7ee60f688b404fbad8261c579740e4f828117ff6380ff883c7824756ee1594",
+  "network_used": false,
+  "receipt_sha256": "2d4b06ff849db00621ae5232504dd05f8e706fd0e78640ae5bc5f73cdb350238",
+  "record_path": "data/wrapped_records/t4e39/179aa8c69a3709e70d0b7b7ea577d2599eb6f55bfaa60db3457dd552f9f41dbf.zarr",
+  "record_sha256": "179aa8c69a3709e70d0b7b7ea577d2599eb6f55bfaa60db3457dd552f9f41dbf",
+  "schema": "t4e39-reference-holdout-field-record/v1",
+  "seam": {
+    "all_passed": true,
+    "checks": [
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-01-02 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2022-01-02 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-01-14 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2022-01-14 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-02-12 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2022-02-12 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-03-03 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2022-03-03 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-04-08 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 5.960464477539063e-08,
+        "timestamp": "2022-04-08 12:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2022-05-21 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2022-05-21 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-01-09 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2023-01-09 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-01-19 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2023-01-19 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-02-12 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2023-02-12 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-03-03 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 5.960464477539063e-08,
+        "timestamp": "2023-03-03 06:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-03-05 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 5.960464477539063e-08,
+        "timestamp": "2023-03-05 00:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "msl",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 0.0625,
+        "timestamp": "2023-11-15 18:00:00"
+      },
+      {
+        "complement_duplicate_removed": true,
+        "coordinate": 180.0,
+        "field": "vo",
+        "maximum_absolute_difference": 0.0,
+        "passed": true,
+        "retained": "parent 180E column",
+        "source_encoding_tolerance": 2.9802322387695312e-08,
+        "timestamp": "2023-11-15 18:00:00"
+      }
+    ]
+  },
+  "shape": {
+    "latitude": 161,
+    "longitude": 321,
+    "time": 12
+  },
+  "sources": {
+    "msl_complement": {
+      "acquisition_sha256": "b62db344e8436c917d1ec09876507507ffc4a15192edc620d9a913876bfea669",
+      "directory": "data/cds_downloads/t4e39_holdout/msl/complement",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "761c51f65acfdc2a8cbea561198e61fcf374a64d345f68a8c34288af77a4dc23",
+      "shards": {
+        "20220102T1200-d09e1e7a7947.nc": "a9dd6f7a663996465bea8b0bd49499577b89cd6faa0b63b230690ab0dc569349",
+        "20220114T1800-b9c525aba76d.nc": "051b3a24748f65e6e09ad78ee6c492cf38f5bc41b03a8bb08270738736e7e89a",
+        "20220212T1200-bc37eb7d62ff.nc": "84ec99f8599b075650a0b3ce2e1d1d54d5c541d96470d010ebf930afbd22e4b3",
+        "20220303T1800-2f460d70decb.nc": "1e957aea504c826ad4007a7b6ca6cd89f14ffd590f21fa40ac85989104dff62b",
+        "20220408T1200-4736e6b77825.nc": "293666c9f39eefbf9b35b4b908c1a1d91fe1b9b7f5ad927d4a5117d037096d59",
+        "20220521T0600-bcf25b4f3067.nc": "4d76dfd938b0fcfbd601532d8358c2fe3149312c5af6559cdb2d36cce4b525a8",
+        "20230109T0600-eb6b414b1d31.nc": "b0f1a307d46253ede8cc6405095b52764431daa69e34194d62c9ba1d55d19f7e",
+        "20230119T1800-784ca9f3b538.nc": "65cfec4915c4b142483246b9ade424a5a05cbf6d6795c2d36aca2c64935db081",
+        "20230212T0000-797ff4393bbc.nc": "1869fc81b33c83be3e34447a8c2e7c2c1f305a889dca3dafe4d3f6dc0806d28f",
+        "20230303T0600-9c2d0d9dad7e.nc": "5236adeceb014b82645f2ae348f6920306077e2b03f6f5859265c9076687e5ac",
+        "20230305T0000-0b753f7792a6.nc": "9ca4f62236a4c9e128532495a84cafbf9e571be05bc2bcdf804dcbeda96158dd",
+        "20231115T1800-067062d357d6.nc": "d534ae3f317a9312d47edd5ddf41b03a652ef0aa431dadc9946c7f0c1c3356f6"
+      }
+    },
+    "msl_parent": {
+      "acquisition_sha256": "a0ae4a871d2e8c003dbb283e52404f2c0ec3f87ce43366635861d4dfe278df76",
+      "directory": "data/cds_downloads/t4e39_holdout/msl/parent",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "fb3c4b3b07e710b8d828a41945e88109a7ff156522b8168460b294a1bc3de44b",
+      "shards": {
+        "20220102T1200-1b7c2cd9b19d.nc": "61d0cca981d7b16684aad4fa83031df8a0625e45a9511923d200170914d0a289",
+        "20220114T1800-72ac3276083d.nc": "9348478c900bde1711714bd9dbb2298bc64ee68dfd2f14f567953315b1a73ef0",
+        "20220212T1200-fc0f9ed9b957.nc": "5f1539cf63075d28324b3e76d64cc643edc66c16f451fb88fa9bba4de73683c9",
+        "20220303T1800-88d4e6a22e48.nc": "b2e8528fa64a35f8c0b5485bd41870d8a6dd5d43663db3e071ccb5420803cad6",
+        "20220408T1200-069c1c5df413.nc": "0955bdfbb341d71b8f1313eb8b455d5ba8b3c4d471eda00f2f030a0c5fc392db",
+        "20220521T0600-681e44c7f5ec.nc": "1e806f1f2420ffb53a47c92091cd6fd90c65251cf0e6625bf68128f3a949c20e",
+        "20230109T0600-a866842c4e43.nc": "83432fddfb186f317849352932641403e7529d30e407a0a97cf4bd32d3fed87a",
+        "20230119T1800-0d376b9428c0.nc": "fb28f6e183e62333fffe3b0acb3ff1eddfb6b00466d4a09005b61d01fed06220",
+        "20230212T0000-cfe64c5db606.nc": "32885a8f7a536860b4b3b05ea41a77db7a3fed70450d32a55c096ecf4487bc5e",
+        "20230303T0600-4c64882209da.nc": "f3bda72bd07e2d3fc20871375bc03095c0788d1e8353cfa6be2979c4828e5c44",
+        "20230305T0000-9c0fc4df26ec.nc": "90f907edd26665b911b2564fe516368245a3af23e42a95c1fdb4208208f2ccba",
+        "20231115T1800-32d5bb6831a7.nc": "7ca5621e59e11d4affebeaf825920e8f0521e9c03c82711257ecf45a91229d1c"
+      }
+    },
+    "vo_complement": {
+      "acquisition_sha256": "4f2037b88c3dfde8be6a67591eee0f326bcf89412f7d34f26cb5dba35a7dec98",
+      "directory": "data/cds_downloads/t4e39_holdout/vo/complement",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "3c961c83678e4489e66665c4163a23af3819b11a435204557f1f7b82e6e20025",
+      "shards": {
+        "20220102T1200-2f7f09a5a2e8.nc": "91966db6d72007ebf4041f828c53793a34f4dc900922498a9e45501049f97cfd",
+        "20220114T1800-4ff156f2f5f2.nc": "9e431bae85fadf6a00a48d52a4c9b7ce294a766b67fa8b5361edaf2198c0ee12",
+        "20220212T1200-ea85fb274ece.nc": "cf3c452c6e0fe9f64f155f6090ffc1e8ae8082c9cf6d8c403ce928803f6b7155",
+        "20220303T1800-c98407f0cae5.nc": "e50426a6231c421d1feea6ce7caf2dec4129bb7b676420007da6feec07cefcb4",
+        "20220408T1200-653c59e403b0.nc": "c54a11cb904a9e9e2e867da9884bd59af50e96b6fffda9a27729e4caa3b65062",
+        "20220521T0600-8a4d34981372.nc": "5049ba50a0d87451801ede6b12b3b14f2a9a5fbf56e791637c2a617d557ccce5",
+        "20230109T0600-91848446e738.nc": "a9e9f14b8e338fba4c62925bf38b912e1f395f98c37a8a716fbb818629c18a15",
+        "20230119T1800-cab6152f1af2.nc": "344298bdf5ef205378248f233f219f914a61c2acfdac8caca533016606f6e2ed",
+        "20230212T0000-9e214c5e7033.nc": "50353f0a4fafff6846b19bf620a20748ddd14eef2703e70515bff5da20c12250",
+        "20230303T0600-135a75eae58a.nc": "59e46ebaa64d89d4573ed00a8a4b231bd9a1f1b40eaabbfd7dd3cfa3700d1a25",
+        "20230305T0000-26cd3063dad5.nc": "0b98a7c67f7c2b1f4ab6a87bceff4d4daff480567fb87ae86a7a59dc3273b064",
+        "20231115T1800-f432089d537a.nc": "e1857b63fd96db76962ec3acede1fd4c62b7120d66e0dd9cd35562a67cf39e83"
+      }
+    },
+    "vo_parent": {
+      "acquisition_sha256": "8a5faf55f62b0a2b90cecc9ba8086d733e532d193254b1c3fed0d39e73f6262d",
+      "directory": "data/cds_downloads/t4e39_holdout/vo/parent",
+      "preserved_byte_for_byte": true,
+      "request_sha256": "ab63bbf9d4558424a26e2a31f2c892538728fe3915b5ecf21bbc7b0c4a98a23d",
+      "shards": {
+        "20220102T1200-f7d4a2740916.nc": "a5bfef59727d38848052d7630c1b008a5942913584d428709d3dc3613b24a653",
+        "20220114T1800-ab51985318d6.nc": "3ecabc8f8bf65f2af70c3b0f6af5e9d3755e60a39adf9686309a36d07178bd72",
+        "20220212T1200-a490141e8d6c.nc": "de50c250413d3586740dbe7d1d2c1caa7c71bbf94bc1e6daaa83dab77397f0a8",
+        "20220303T1800-359611b22519.nc": "fbf74bf53bd681a1385890c4b3a4eddcf30284c850db8b2cfe635d4abba6f73c",
+        "20220408T1200-ebd5b1fabd16.nc": "dbba36bd130b7fbe735c1f72dc572ec0fbc3f6a8946696b10d5e08856c5bbdfe",
+        "20220521T0600-989e5bd7f832.nc": "4722b39800bfa0137fa6ac53a6759cf88267ccbbe218d8f1badb2da7aceb0805",
+        "20230109T0600-c85312e9321a.nc": "0ab6cc128cb0dc7a60461582747c4255c7813e23226fc15ed6542967103c004b",
+        "20230119T1800-9a556b77abd0.nc": "841177dca67aa40e87f0b161dcec2edf3c8437ec46923f8f256b4ca232fe48a0",
+        "20230212T0000-70e229ca5e85.nc": "0799af9fcfd7e31759021b3000741ad4cadc31d4ed73b497f00fd88a70d063ab",
+        "20230303T0600-188e13b74a5f.nc": "a5cd78d352158a4d367eaba5aa870f8f49e7f6102c142ff80dc136e40ae3f93e",
+        "20230305T0000-b2889b1b7e0d.nc": "8b3867b31c4eec3e550bdd2bd9495d13c6f7476432c2571c6320e129e82bcdac",
+        "20231115T1800-16836d2ec934.nc": "63ae2cc19f812ab802e13918a741320e78e494a55612a8de72daa2753d554314"
+      }
+    }
+  }
+}

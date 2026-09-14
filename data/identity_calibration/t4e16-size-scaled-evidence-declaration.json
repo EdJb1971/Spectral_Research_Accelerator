@@ -1,0 +1,105 @@
+{
+  "schema": "t4e12-identity-criterion-declaration/v1",
+  "status": "WITHDRAWN_BEFORE_ADOPTION_BY_DERIVATION",
+  "task": "T4E.16",
+  "candidate": "5_size_scaled_evidence_against_a_surrogate_null",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-10",
+  "why_this_candidate": "Four results now say one thing together that none says alone. Candidate 2 works at k = S because a six-scene conjunction is hard to reach by chance. Candidate 3 shows one scene of slack destroys that, and the k profile shows the null itself breaks just below the margin. Candidate 4 shows that dropping the size requirement altogether inverts the rule, because it admits a group of two on the same terms as a group of six. The constraint they jointly fix is that THE EVIDENCE A GROUP CARRIES MUST SCALE WITH THE GROUP, and no criterion in this sequence makes it do so. This candidate makes the bar a function of group size, set by a null rather than by a number anyone chose.",
+  "criterion": {
+    "statement": "Across a partition of S scenes, form the mutual nearest-neighbour matching and the maximal consistent sets exactly as candidate 2 does. The TIGHTNESS of a set is its diameter: the largest signature distance between any two of its members. Build 199 surrogate partitions by pooling every configuration of the partition and redistributing them at random into S scenes of equal size. In each surrogate, find the tightest consistent set OF EACH SIZE. Admit a real consistent set of size m if its diameter is smaller than the tightest diameter achieved at size m by every one of the 199 surrogates, and admit no others.",
+    "name": "size_scaled_evidence_against_a_permutation_surrogate",
+    "the_statistic_is_the_diameter_and_why": "A set is a correspondence only if every member matches every other, so the binding evidence is the weakest link, not the average one. The mean would let a tight core carry a loose member. This is a reason, not a tuning: no alternative statistic was tried.",
+    "why_the_max_statistic_and_not_a_p_value_per_group": "Comparing each real set against the SINGLE TIGHTEST surrogate set of its own size controls the family-wise error across every set of that size in the partition at 1/200, with no alpha divided by anything. Candidate 1 divided alpha by the number of comparisons, and at richness 12 that drove the threshold below the resolution its own model could express, so it admitted nothing anywhere. The max-statistic is the standard permutation construction that avoids exactly that, and it is chosen for that reason.",
+    "how_the_bar_scales_with_size_without_a_parameter": "Large coincidental sets are rarer under the surrogate than small ones, so the tightest surrogate set of size 6 is looser -- or does not exist -- while the tightest surrogate pair is very tight indeed. The bar therefore falls as m rises, automatically, and nobody chose the rate at which it falls.",
+    "when_no_surrogate_reaches_size_m": "If no surrogate replicate produces a consistent set of size m at all, every real set of that size is admitted, and the result must record it as ADMITTED BY ABSENCE with the rate bound p < 1/200 stated alongside. This is a positive finding about the null, not a missing value, and it is NOT to be reported as though a threshold had been beaten.",
+    "surrogate_count": "199, matching `_MOTIF_SURROGATES` already used by this generator's own null. Taken for that precedent rather than chosen: 199 gives the 1/200 floor the rest of the programme already works to.",
+    "what_does_not_change": "The signature mode, the attribute weights, the cardinality, the construction labels, the mutual nearest-neighbour rule that proposes the pairs, the exact rather than greedy enumeration, the one-configuration-per-scene requirement, and the definitions of both error rates. Counted over the same population as candidates C, D, 2, 3 and 4."
+  },
+  "the_surrogate_and_what_it_preserves": {
+    "construction": "Pool all S x m configurations of the partition and redistribute them uniformly at random into S scenes of m each. Distinct seed per replicate, derived from the partition and the replicate index, so the whole thing is reproducible.",
+    "what_it_destroys": "Any genuine cross-scene correspondence. A motif that occupied one configuration per scene is scattered, and may land twice in one scene, where the one-configuration-per-scene rule cannot use it.",
+    "what_it_preserves_exactly": "The multiset of configurations and therefore the entire signature distribution, including the scale and spread that T4E.10 showed does not transfer between partitions. The null is drawn from the partition's own configurations, so it cannot be beaten by a rule that has merely learned the partition's scale.",
+    "why_not_the_existing_null_blocks": "500-505 and 850-855 are different scenes with their own draw. They answer 'what does this rule do where nothing recurs', which is a declared acceptance condition and is kept. The surrogate answers a different question -- 'how tight can a set of this size get in THIS partition by chance' -- and only a within-partition permutation answers it."
+  },
+  "the_computational_requirement_is_part_of_the_criterion": {
+    "why_it_is_declared_rather_than_left_to_implementation": "A design that cannot be run is not a criterion. The cost was derived before this declaration was written, on the already-measured blocks 100-405 and not on the evidence this candidate will be judged on.",
+    "measured_cost": "The clique enumeration is free -- 0.0 seconds at every richness. All the cost is the matching: 0.8s at richness 6, 13.5s at 9, and 95.3s at 12 for a single partition. Naively, 199 replicates across 36 partitions at richness 12 alone is 189 hours, which is infeasible.",
+    "the_requirement": "A surrogate permutes WHICH SCENE each configuration occupies and changes no pairwise distance between configurations. The pairwise distance matrix over the pooled configurations must therefore be computed ONCE per partition and reused across all 199 replicates, leaving each replicate as bookkeeping over a precomputed matrix.",
+    "the_refusal_this_optimisation_must_preserve": "SignatureMetric refuses cross-family comparison by name when one configuration is near-isotropic and carries no bearing block. The cached matrix must carry that refusal AS A REFUSAL and never as a large distance, and refused entries must be counted and surfaced. A named refusal is preferable to an unsupported number, and optimisation must preserve it -- a cache that quietly turned refusals into distances would make the criterion admit or reject on a number the metric declined to supply."
+  },
+  "what_is_derivable_before_measuring": {
+    "at_the_small_end_the_bar_is_high": "A pooled redistribution readily produces mutual nearest-neighbour pairs, so the tightest surrogate pair among 199 replicates is very tight and a real pair must beat it. Candidate 4's defect -- a group of two admitted trivially -- is therefore excluded by construction rather than by hope.",
+    "at_the_large_end_absence_is_the_evidence": "Candidate 2 established that on real total-recurrence data nothing coincidental reaches size 6, and a surrogate destroys the very correspondence structure that gets the motif there, so surrogates reaching 6 should be rarer still. Where they do not, the rule ADMITS with p < 1/200 rather than refusing. This is the exact inverse of candidate 1, whose thin support at its extreme made it refuse everything.",
+    "THE_STATUS_OF_THAT_SECOND_POINT": "It is an ARGUMENT, NOT A PROOF, and is labelled as one. If some surrogate replicate produces a size-6 set tighter than the motif, the motif is rejected, and nothing derivable excludes that.",
+    "non_inertness_is_NOT_derivable_here_unlike_candidate_4": "Candidate 4 could be shown in advance to admit at least the motif on total-recurrence evidence. Candidate 5 cannot. It may admit nothing, and that would be a complete result. Saying so plainly is the point: the previous declaration claimed a derivation it had and missed one it needed, and this one states exactly which of its claims are proved and which are argued.",
+    "what_this_candidate_owes_to_candidate_4s_failure": "Candidate 4's feasibility section asked only whether the rule COULD admit the answer, and never what it does at the extremes of its own domain -- where a group of two makes closure vacuous. That was derivable and was not derived. This declaration's derivations are therefore organised by the extremes of m, smallest and largest, because that is where the last three candidates died."
+  },
+  "development": {
+    "primary_evidence": "The T4E.14 partial-presence partitions 800-835 at presence levels j in {3, 4, 5} with the null 850-855, at richness 6, 9 and 12.",
+    "secondary_evidence": "The total-recurrence blocks 100-405 and the null 500-505, as a declared cross-check that the criterion keeps what candidate 2 kept. A cross-check, not a horse race: candidate 2 is already adjudicated and candidate 5 is judged only against the conditions below.",
+    "status": "ALL ALREADY INSPECTED. The T4E.14 partitions were built and audited on 2026-09-10; the total-recurrence blocks are the most inspected data in the programme, and the cost derivation above touched them again. A blind declaration does not make inspected blocks fresh."
+  },
+  "confirmatory": {
+    "blocks": [
+      [
+        880,
+        881,
+        882,
+        883,
+        884,
+        885
+      ],
+      [
+        890,
+        891,
+        892,
+        893,
+        894,
+        895
+      ]
+    ],
+    "status": "RESERVED AND NEVER BUILT. Refused unconditionally in code by ReservedPartialPresenceScene. This declaration does not open them and adopting it does not.",
+    "why_the_multiplicity_now_matters_more_than_before": "This is the EIGHTH criterion declared in this sequence. Sequential preregistered attempts accumulate multiplicity, and eight tried with the first success reported is eight tests reported as one. The two remaining reservations -- 720-735 total-recurrence and 880-895 partial-presence -- are what can convert that back into a single confirmatory test, and there are no others. Spending either on a candidate that has not met its development acceptance would leave the programme with an accumulated multiplicity it can no longer discharge."
+  },
+  "acceptance": {
+    "condition_1_recall_on_partial_presence": "False split at most 0.10 at every presence level j and every richness individually, counted against C(j,2) and NOT C(S,2).",
+    "condition_2_admission_on_partial_presence": "False admission at most 0.10 at every j and every richness individually.",
+    "condition_3_no_hallucinated_presence": "Admitted pairs with a member in an ABSENT scene at most 0.10 of admissions, reported separately at every j and richness.",
+    "condition_4_null": "On the partial-presence null 850-855 and the total-recurrence null 500-505, admissions must be ZERO at every richness. Not near zero.",
+    "condition_5_cross_check": "On the total-recurrence blocks the criterion must recover the motif's full clique and hold false admission at most 0.10. Unlike candidate 4 this recall is NOT derivable and is therefore evidence rather than arithmetic.",
+    "condition_6_refusals": "Refusals reported by name with an explicit verdict including INVALID: configurations refused as incomparable, cached distances refused by the metric, and every size at which the criterion admitted BY ABSENCE rather than by beating a threshold."
+  },
+  "what_would_falsify_this_candidate": "A false split above 0.10 at any j or richness, or false admission above 0.10, or hallucinated presence above 0.10, or any admission on either null, or failure of the cross-check. Any of these is a complete result and is to be recorded, not tuned away. Changing the statistic from the diameter, changing the surrogate count, changing the surrogate construction, or adding any threshold or tolerance is specifically forbidden: each would be a different candidate needing its own declaration, and none could claim blindness because this result will have been seen.",
+  "what_a_failure_would_and_would_not_license": "It would license this: a size-scaled bar set by a within-partition permutation surrogate, as defined here, does not separate partial recurrence from coincidence in these scenes. It would NOT license concluding that the signature is inadequate, that partition structure is the wrong resource, that partial recurrence is undetectable, or that size-scaled evidence is the wrong idea -- only that this construction of it fails. It would, however, be the eighth falsification, and at that point the honest reading is that the synthetic path has been exhausted rather than that the ninth candidate will succeed.",
+  "what_a_success_would_and_would_not_license": "A success would license only that the criterion separates partial recurrence from coincidence ON ALREADY-INSPECTED SYNTHETIC PARTITIONS with a rule fixed blind. It would make spending 880-895 worthwhile and would NOT itself be confirmation. It would not approve a mining radius, discharge T4E.8's acquired-record acceptance, close D96, D97, D98, D99 or D100, and would say nothing about recurrence across genuinely separated epochs, which this generator cannot produce and the acquired-record path still owes.",
+  "governing_rules": [
+    "R20: candidate 5 is evaluated alone against the six conditions above. Candidates C, D, 2, 3 and 4 appear only as the proposer of pairs, as derivations, and in a declared cross-check, which is not adjudication.",
+    "Already inspected data do not become untouched by renaming them, and do not become untouched by a blind declaration either.",
+    "A named refusal is preferable to an unsupported number, and optimisation must preserve it.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+  "scope": "Atmospheric identity path. The mechanism is domain-agnostic but the evidence is atmospheric and synthetic. Cross-domain use requires its own declared experiment and its own qualification, per R19.",
+  "claim_boundary": "Synthetic scenes settle a property of the criterion, not of the atmosphere. Nothing here approves a mining radius, discharges T4E.8's acquired-record acceptance, or closes D96, D97, D98, D99 or D100. The primary scientific target remains kind_recurrence, which needs external_reference evidence no criterion of this kind supplies. No frame of the 2022-2023 forecast-test period is opened by any part of this.",
+  "withdrawal": {
+    "withdrawn_on": "2026-09-10",
+    "withdrawn_before": "adoption, and before any measurement of the criterion on any evidence",
+    "why": "The surrogate can reassemble the very structure it exists to destroy. It redistributes the partition's ACTUAL configurations, so when the S motif copies happen to land in S distinct scenes they form the same consistent set with exactly the same diameter. The rule admits only a set strictly tighter than the tightest surrogate set of its size, so a single such replicate sets the bar at the motif's own diameter and the motif is rejected.",
+    "the_rate_is_combinatorial_and_was_computed_not_assumed": {
+      "per_replicate": "S!/S^S = 0.0154 at S = 6, confirmed by simulation at 0.0166, 0.0168 and 0.0153 for m = 20, 84 and 220",
+      "over_199_replicates": "0.9642, 0.9657 and 0.9535 -- so at every declared richness the motif is rejected with about 96% probability",
+      "reading": "Candidate 5 as declared would fail its own conditions 1 and 5 for a reason that has nothing to do with the signature. It is a permutation null invalidated by its own permutations, which is the known failure of that construction when the signal is a small set of near-duplicates and S is small."
+    },
+    "why_it_cannot_simply_be_repaired": "A valid null must GENERATE fresh distractor scenes rather than redistribute existing ones. But then every pairwise distance changes per replicate, the cached matrix that made the design runnable is worthless, and the cost returns to the measured 189 hours at richness 12 alone. A feasible null is invalid here and a valid null is infeasible. Widening S would drive S!/S^S down fast, but S = 6 is the frozen partition size and changing it to rescue a criterion would be tuning the evidence to the rule.",
+    "what_was_NOT_done": "The criterion was not adopted, not measured, and not quietly altered into a variant that passes. No surrogate was ever run on the T4E.14 evidence or on any block. The declaration is retained unedited above this section, superseded and not deleted, because a design killed by derivation is part of the record.",
+    "what_this_cost_and_what_it_saved": "It cost one declaration written and withdrawn. It saved an adoption, a measurement, and -- had the result been read as a failure of the signature rather than of the null -- a wrong conclusion about the identity path. The derivation that caught it is the one candidate 4's declaration should have made and did not: ask what the rule does at the extremes of its own domain before adopting it.",
+    "what_survives_and_is_kept": "The cost finding, which is general: the clique enumeration is free and the matching is the entire expense, at 0.8, 13.5 and 95.3 seconds per partition at richness 6, 9 and 12. And PooledDistances, which computes a partition's distances once and keeps the metric's refusals AS refusals rather than as numbers. Both are recorded because the next design will meet the same arithmetic.",
+    "what_this_does_NOT_license": [
+      "Not that size-scaled evidence is the wrong idea. The constraint the four previous results fix -- that the evidence a group carries must scale with the group -- is untouched by this withdrawal. What failed is one null, not the principle.",
+      "Not that the signature is inadequate. No measurement was taken.",
+      "Not that a permutation surrogate is wrong in general. It is invalid HERE, at S = 6, against a signal of S near-duplicates.",
+      "Nothing about kind_recurrence, D96 to D100, a mining radius, or recurrence across separated epochs."
+    ],
+    "the_multiplicity_position_is_unchanged_by_this": "A declaration withdrawn before adoption and before measurement adds nothing to the accumulated multiplicity, because nothing was tested. Seven criteria have been measured in this sequence, not eight. The two reservations -- 720-735 and 880-895 -- are still unspent and still the only way to discharge what has accumulated."
+  }
+}

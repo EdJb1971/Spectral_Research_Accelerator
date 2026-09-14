@@ -21,6 +21,9 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
   const [plan, setPlan] = useState<types.RepresentationAuditPlan | null>(null);
   const [result, setResult] = useState<types.RepresentationAuditResult | null>(null);
   const [capability, setCapability] = useState<types.DatasetCapabilityProfile | null>(null);
+  const [handoff, setHandoff] = useState<types.SampleTablePlanningHandoff | null>(null);
+  const [handoffPlan, setHandoffPlan] = useState<Record<string, any> | null>(null);
+  const [planningOperation, setPlanningOperation] = useState<string | null>(null);
   const [busy, setBusy] = useState<'probe' | 'plan' | 'audit' | null>(null);
 
   const featureCount = useMemo(() => Object.values(roles).filter((role) => role === 'feature').length,
@@ -33,7 +36,9 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
 
   const inspect = async () => {
     if (!file) return;
-    setBusy('probe'); setPlan(null); setResult(null); setCapability(null); onCapability?.(null);
+    setBusy('probe'); setPlan(null); setResult(null); setCapability(null); setHandoff(null);
+    setHandoffPlan(null);
+    onCapability?.(null);
     try {
       const found = await apiService.probeGenericFile(file);
       setProbe(found);
@@ -49,10 +54,34 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
     try {
       const profile = await apiService.genericFileCapabilities(file, declaration);
       setCapability(profile); onCapability?.(profile);
-      if (!profile.operations.representation_audit?.available) return;
-      setPlan(await apiService.planRepresentationAudit(file, declaration,
-        { pcaComponents: Math.max(1, Math.min(3, featureCount)), permutations: 4999 }));
     } catch (error) { fail(error); } finally { setBusy(null); }
+  };
+
+  const prepareHandoff = async (operation: string) => {
+    if (!file) return;
+    setPlanningOperation(operation); setResult(null);
+    try {
+      const prepared = await apiService.planSampleTableHandoff(file, declaration, operation);
+      let frozen: Record<string, any>;
+      if (operation === 'representation_audit') {
+        frozen = await apiService.planRepresentationAudit(file, declaration,
+          { pcaComponents: Math.max(1, Math.min(3, featureCount)), permutations: 4999 });
+      } else if (operation === 'redundancy_structure_audit') {
+        frozen = await apiService.planRedundancyStructure(file, declaration);
+      } else if (operation === 'conditional_information_audit') {
+        frozen = await apiService.planConditionalInformation(file, declaration);
+      } else {
+        frozen = await apiService.planStableSubspace(file, declaration);
+      }
+      if (frozen.schema !== prepared.destination.plan_schema ||
+          frozen.content_sha256 !== prepared.request.file_binding_sha256) {
+        throw new Error('The destination planner did not preserve the handoff binding.');
+      }
+      setHandoff(prepared);
+      setHandoffPlan(frozen);
+      setPlan(operation === 'representation_audit'
+        ? frozen as unknown as types.RepresentationAuditPlan : null);
+    } catch (error) { fail(error); } finally { setPlanningOperation(null); }
   };
 
   const run = async () => {
@@ -74,7 +103,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
     <div className="flex flex-col sm:flex-row gap-2">
       <label className="flex-1 text-xs text-slate-400">CSV or TSV sample table
         <input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-          onChange={(event) => { setFile(event.target.files?.[0] ?? null); setProbe(null); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
+          onChange={(event) => { setFile(event.target.files?.[0] ?? null); setProbe(null); setPlan(null); setResult(null); setCapability(null); setHandoff(null); setHandoffPlan(null); onCapability?.(null); }}
           className="mt-1 block w-full text-xs file:bg-slate-800 file:text-slate-200 file:border-0 file:rounded file:px-3 file:py-2" />
       </label>
       <button type="button" onClick={() => void inspect()} disabled={!file || busy !== null}
@@ -101,7 +130,7 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
             <td className="p-2 text-slate-500">{column.storage_type} · {column.missing_count} missing · {column.distinct_count} distinct</td>
             <td className="p-2"><label className="sr-only" htmlFor={`role-${column.name}`}>Role for {column.name}</label>
               <select id={`role-${column.name}`} value={roles[column.name] ?? 'ignore'}
-                onChange={(event) => { setRoles({ ...roles, [column.name]: event.target.value as types.SampleRole }); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
+                onChange={(event) => { setRoles({ ...roles, [column.name]: event.target.value as types.SampleRole }); setPlan(null); setResult(null); setCapability(null); setHandoff(null); setHandoffPlan(null); onCapability?.(null); }}
                 className="bg-slate-950 border border-slate-700 rounded p-1.5">
                 {ROLES.map((role) => <option key={role}>{role}</option>)}
               </select></td>
@@ -109,14 +138,14 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
               <label className="sr-only" htmlFor={`unit-${column.name}`}>Units for {column.name}</label> : null}
               {column.storage_type === 'numeric' && roles[column.name] !== 'ignore' &&
                 <input id={`unit-${column.name}`} value={units[column.name] ?? ''}
-                  onChange={(event) => { setUnits({ ...units, [column.name]: event.target.value }); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
+                  onChange={(event) => { setUnits({ ...units, [column.name]: event.target.value }); setPlan(null); setResult(null); setCapability(null); setHandoff(null); setHandoffPlan(null); onCapability?.(null); }}
                   className="w-32 bg-slate-950 border border-slate-700 rounded p-1.5" />}</td>
           </tr>)}</tbody>
         </table>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         <label className="text-xs text-slate-400">How are rows related?
-          <select value={relationship} onChange={(event) => { setRelationship(event.target.value as typeof relationship); setPlan(null); setResult(null); setCapability(null); onCapability?.(null); }}
+          <select value={relationship} onChange={(event) => { setRelationship(event.target.value as typeof relationship); setPlan(null); setResult(null); setCapability(null); setHandoff(null); setHandoffPlan(null); onCapability?.(null); }}
             className="mt-1 block bg-slate-950 border border-slate-700 rounded p-2">
             <option value="independent">Independent samples</option>
             <option value="grouped">Grouped samples</option>
@@ -126,13 +155,26 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
         <button type="button" onClick={() => void freeze()} disabled={busy !== null || featureCount < 1}
           className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded px-4 py-2 text-xs font-semibold flex gap-2">
           {busy === 'plan' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-          Determine paths and freeze
+          Determine paths
         </button>
       </div>
       <p className="text-[10px] text-slate-500">{probe.claim_boundary}</p>
     </>}
 
-    {capability && <DatasetCapabilityProfile profile={capability} />}
+    {capability && <DatasetCapabilityProfile profile={capability}
+      onSelectOperation={(operation) => void prepareHandoff(operation)}
+      planningOperation={planningOperation} />}
+
+    {handoff && <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4 text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div><h3 className="font-semibold text-indigo-200">Planning handoff prepared</h3>
+          <p className="mt-1 text-slate-400">{handoff.operation.name} · existing
+            {' '}{handoff.destination.api_path} planner</p></div>
+        <span className="font-mono text-[9px] text-slate-600">
+          {handoff.handoff_sha256.slice(0, 12)}…</span>
+      </div>
+      <p className="mt-2 text-[10px] text-slate-500">{handoff.claim_boundary}</p>
+    </div>}
 
     {plan && <div className="border border-indigo-500/30 bg-indigo-500/5 rounded-lg p-4 text-xs">
       <div className="flex justify-between gap-3 items-start">
@@ -162,7 +204,8 @@ const GenericIngress: React.FC<{ onError?: (message: string) => void;
     </div>}
 
     {file && capability && <RepresentationStructureProgramme file={file}
-      declaration={declaration} capability={capability} onError={onError} />}
+      declaration={declaration} capability={capability} handoff={handoff}
+      handoffPlan={handoffPlan} onError={onError} />}
   </section>;
 };
 

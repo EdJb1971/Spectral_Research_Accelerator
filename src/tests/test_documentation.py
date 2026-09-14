@@ -53,6 +53,11 @@ def licence():
 
 
 @pytest.fixture(scope="module")
+def plan():
+    return _read("PLAN.md")
+
+
+@pytest.fixture(scope="module")
 def readme():
     return _read("README.md")
 
@@ -247,7 +252,10 @@ def test_every_referenced_defect_id_is_defined(architecture, roadmap, verificati
         referenced = {"D" + n for n in re.findall(r"\bD(\d+)\b", doc)}
         # Ignore anything above the ledger's range: those are not defect references
         # (for example a "D40" would be a typo worth catching, but "D2026" is a date).
-        dangling = sorted(d for d in referenced - defined if int(d[1:]) <= 99)
+        # The bound is the ledger's own highest entry rather than a literal, which was 99
+        # until D100 existed -- a constant chosen when three digits could only be a year.
+        highest = max(int(d[1:]) for d in defined)
+        dangling = sorted(d for d in referenced - defined if int(d[1:]) <= highest)
         assert not dangling, "%s references undefined defects: %s" % (doc_name, dangling)
 
 
@@ -395,10 +403,16 @@ def test_architecture_does_not_claim_the_frontend_was_never_built(architecture):
 
 
 def test_proprietary_licence_preserves_owner_and_named_researcher_boundary(licence):
-    """The intended family grant must not silently become all-rights-reserved or open source."""
+    """The grant must not silently become all-rights-reserved or open source.
+
+    It must also not name a private individual. The designated-licensee structure exists so the
+    grant can be real without a personal name and address sitting in a public repository, and
+    this guard holds both halves: the terms of the grant survive, and no third party's personal
+    details come back.
+    """
     required = (
         "Edward Jonathan Bentley", "ed.j.bentley@gmail.com",
-        "Adam Frank Bentley", "adam.f.bentley@gmail.com",
+        "Named Licensee", "designates in writing",
         "perpetual", "worldwide", "royalty-free", "commercial activity",
         "high-performance-computing", "Independent Extension",
         "must not", "publicly distribute", "sublicensed",
@@ -408,6 +422,15 @@ def test_proprietary_licence_preserves_owner_and_named_researcher_boundary(licen
         assert text in licence, "LICENSE.md has lost the declared term %r" % text
     assert "not an open-source" in licence
     assert "does not assign or transfer ownership" in licence
+    # No third party's contact details, whoever they are. Naming the individuals this once
+    # protected would put them back in the repository, so the guard is written against the
+    # shape of the thing rather than against two particular people.
+    # The tail group repeats rather than allowing dots freely, so a sentence's full stop
+    # after an address is not read as part of it.
+    addresses = set(re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", licence))
+    assert addresses <= {"ed.j.bentley@gmail.com"}, (
+        "LICENSE.md carries a third party's email address (%s); a personal grant is designated "
+        "in writing and is not published here" % ", ".join(sorted(addresses)))
 
 # ============================================================== status-section drift
 
@@ -527,6 +550,44 @@ def _readme_frontier(readme):
     end = readme.find("**What has not been done**", start)
     assert end != -1, "the frontier block must be followed by the '**What has not been done**' list"
     return readme[start:end]
+
+
+def test_plan_disclaims_being_the_status_of_record(plan):
+    """PLAN.md is the plan. If it starts carrying evidence it becomes a fourth thing to keep
+    in step, which is the problem it was written to solve."""
+    flat = " ".join(plan.split())
+    assert "This document is the plan, and only the plan" in flat
+    assert "they are right and this is stale" in flat
+    for pointer in ("roadmap.md", "architecture.md", "VERIFICATION.md"):
+        assert pointer in plan, "PLAN.md must name %s as where the record lives" % pointer
+
+
+def test_plan_open_defects_match_the_ledger(plan, architecture):
+    """Every defect the plan calls blocking must be open in the ledger, and every open defect
+    must be either in the plan's order or in its deliberately-not-next list."""
+    import re as _re
+    open_ids = {row.split("|")[1].strip()
+                for row in architecture.splitlines()
+                if row.startswith("| D") and "**OPEN**" in row}
+    named = set(_re.findall(r"D[0-9]+", plan))
+    missing = open_ids - named
+    assert not missing, (
+        "PLAN.md does not account for open defect(s) %s -- put them in the order or in "
+        "'Deliberately not next'" % ", ".join(sorted(missing)))
+    invented = {item for item in named if item not in open_ids
+                and "| %s |" % item not in architecture}
+    assert not invented, "PLAN.md names defect(s) the ledger does not define: %s" % invented
+
+
+def test_plan_does_not_mark_work_done_that_the_roadmap_has_not(plan, roadmap):
+    """The plan may say a task is in progress or not started. It may not award a DONE the
+    task history has not recorded, because the evidence lives there and not here."""
+    import re as _re
+    for task in _re.findall(r"### (T4[A-Z]\.\d+)", plan):
+        assert "**%s" % task in roadmap or task in roadmap, (
+            "PLAN.md plans %s but roadmap.md does not define it" % task)
+    assert "DONE" not in plan, (
+        "PLAN.md must not record completions; roadmap.md is where a DONE carries its evidence")
 
 
 def test_readme_disclaims_being_the_status_of_record(readme):

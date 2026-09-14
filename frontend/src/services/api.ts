@@ -337,6 +337,17 @@ export const apiService = {
       await fetch(`${BASE_URL}/ingress/capabilities`, { method: 'POST', body: form }));
   },
 
+  async planSampleTableHandoff(file: File, declaration: types.SampleTableDeclaration,
+                               operation: string,
+                               delimiter = ','): Promise<types.SampleTablePlanningHandoff> {
+    const form = new FormData();
+    form.append('file', file); form.append('delimiter', delimiter);
+    form.append('declaration', JSON.stringify(declaration));
+    form.append('operation', operation);
+    return handleResponse<types.SampleTablePlanningHandoff>(
+      await fetch(`${BASE_URL}/ingress/planning-handoff`, { method: 'POST', body: form }));
+  },
+
   async runRepresentationAudit(file: File, plan: types.RepresentationAuditPlan,
                                delimiter = ','): Promise<types.RepresentationAuditResult> {
     const form = new FormData();
@@ -1087,6 +1098,50 @@ export const apiService = {
       await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}`, { method: 'GET' }));
   },
 
+  // A discussion is ephemeral unless the researcher separately calls `save`. Scientific
+  // context is deliberately absent from the request: the server reloads the whole current
+  // record on every turn and rejects a conversation bound to an older bundle digest.
+  async getFindingConversationContext(
+    studyId: string, glossary: string,
+  ): Promise<types.FindingConversationContext> {
+    const query = new URLSearchParams({ glossary }).toString();
+    return handleResponse<types.FindingConversationContext>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/context?${query}`,
+        { method: 'GET' }));
+  },
+
+  async askAboutFinding(
+    studyId: string,
+    body: {
+      question: string;
+      history: types.ConversationTurn[];
+      glossary: string;
+      model_id: string;
+      expected_bundle_sha256: string;
+      i_authorise_paid_call: boolean;
+    },
+  ): Promise<types.FindingConversationAnswer> {
+    return handleResponse<types.FindingConversationAnswer>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/ask`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }));
+  },
+
+  async saveFindingDiscussion(
+    studyId: string,
+    body: {
+      turns: types.ConversationTurn[];
+      glossary: string;
+      expected_bundle_sha256: string;
+      title?: string;
+    },
+  ): Promise<types.SavedFindingDiscussion> {
+    return handleResponse<types.SavedFindingDiscussion>(
+      await fetch(`${BASE_URL}/conversations/studies/${encodeURIComponent(studyId)}/save`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      }));
+  },
+
   // ------------------------------------------------ orchestrated runs (TG17.6)
   // Posting a manifest opens the run that manifest identifies. It is not `create`: the identity
   // is the content address of the plan, so a second post - a refreshed browser, a second tab, a
@@ -1179,6 +1234,79 @@ export const apiService = {
   async rehearseExperimentQualification(): Promise<types.ExperimentQualificationRecord> {
     return handleResponse<types.ExperimentQualificationRecord>(
       await fetch(`${BASE_URL}/experiment-qualification/rehearse`, { method: 'POST' }));
+  },
+
+  async g17Pool(): Promise<types.G17PoolSurface> {
+    return handleResponse<types.G17PoolSurface>(
+      await fetch(`${BASE_URL}/g17-pool`, { method: 'GET' }));
+  },
+
+  async writeG17PoolReview(body: {
+    exchangeability: 'ESTABLISHED' | 'NOT_ESTABLISHED'; basis: string;
+    unmeasured_properties: string[]; limitations: string; claim_boundary: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/g17-pool/review`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async adoptG17PoolReview(body: {
+    adopted_by: string; adopted_as: string; what_was_adopted: string;
+    affirmation: string; why?: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/g17-pool/review/adopt`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async identityAcceptance(): Promise<types.IdentityAcceptanceState> {
+    return handleResponse<types.IdentityAcceptanceState>(
+      await fetch(`${BASE_URL}/identity/acceptance`, { method: 'GET' }));
+  },
+
+  // ------------------------------------- T4E.39 the temporal reference holdout
+
+  async referenceHoldout(): Promise<types.HoldoutSurface> {
+    return handleResponse<types.HoldoutSurface>(
+      await fetch(`${BASE_URL}/reference-holdout`, { method: 'GET' }));
+  },
+
+  async referenceHoldoutRows(): Promise<types.HoldoutRows> {
+    return handleResponse<types.HoldoutRows>(
+      await fetch(`${BASE_URL}/reference-holdout/rows`, { method: 'GET' }));
+  },
+
+  async referenceHoldoutArtifact(name: string): Promise<types.HoldoutArtifact> {
+    return handleResponse<types.HoldoutArtifact>(
+      await fetch(`${BASE_URL}/reference-holdout/artifacts/${encodeURIComponent(name)}`,
+        { method: 'GET' }));
+  },
+
+  async writeHoldoutReview(body: {
+    boundary_assessment: 'BOUNDARY_SOUND' | 'BOUNDARY_DISPUTED'; basis: string;
+    what_this_does_not_establish: string[]; limitations: string; next_action: string;
+    claim_boundary: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/reference-holdout/review`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async adoptHoldoutReview(body: {
+    adopted_by: string; adopted_as: string; what_was_adopted: string;
+    affirmation: string; why?: string;
+  }): Promise<Record<string, any>> {
+    return handleResponse<Record<string, any>>(
+      await fetch(`${BASE_URL}/reference-holdout/review/adopt`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
   },
 
   // ---------------------------------------------------- TG17.7 the guided path
@@ -1282,10 +1410,112 @@ export const apiService = {
         body: JSON.stringify({ mode, reading }) }));
   },
 
+  async composeDeclaration(body: {
+    task: string; artefact: string; declared_by: string; why_this_exists: string;
+    what_this_is_not: string; the_inputs: string; claim_boundary: string;
+    gate: types.ComposeGateEntry[]; predictions: types.ComposePrediction[];
+    commit_it_alone: boolean;
+  }): Promise<types.ComposeResult> {
+    return handleResponse<types.ComposeResult>(
+      await fetch(`${BASE_URL}/identity/declarations/compose`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async listDeclarations(): Promise<types.DeclarationIndex> {
+    return handleResponse<types.DeclarationIndex>(
+      await fetch(`${BASE_URL}/identity/declarations`));
+  },
+
+  async signDeclaration(body: {
+    declaration: string; adopted_by: string; adopted_as: string;
+    what_was_adopted: string; affirmation: string; why?: string;
+  }): Promise<types.SignResult> {
+    return handleResponse<types.SignResult>(
+      await fetch(`${BASE_URL}/identity/declarations/sign`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
+  async panelPlan(): Promise<types.PanelPlan> {
+    return handleResponse<types.PanelPlan>(await fetch(`${BASE_URL}/reviews/panel-plan`));
+  },
+
+  async conveneRoundRobin(studyId: string, body: {
+    i_authorise_paid_calls: boolean; model_id?: string; effort?: string;
+    seats?: Record<string, string>;
+  }): Promise<types.RoundRobinRun> {
+    return handleResponse<types.RoundRobinRun>(
+      await fetch(`${BASE_URL}/reviews/studies/${encodeURIComponent(studyId)}/round-robin`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }));
+  },
+
   // T4C.5j: the atmospheric gate record. Every method below is a GET and there is no other
   // kind, which is the contract rather than an unfinished section. The two write-shaped things
   // a reader might look for - preflight and acquisition - are deliberately absent: the first
   // reports on a machine rather than on the science, and the second spends a 2.8 GB transfer.
+  async identityTargets(): Promise<types.IdentityTargets> {
+    return handleResponse<types.IdentityTargets>(await fetch(`${BASE_URL}/identity/targets`));
+  },
+
+  async listIdentityAudits(): Promise<types.IdentityAuditIndex> {
+    return handleResponse<types.IdentityAuditIndex>(await fetch(`${BASE_URL}/identity/audits`));
+  },
+
+  async identityStudies(): Promise<types.IdentityStudies> {
+    return handleResponse<types.IdentityStudies>(await fetch(`${BASE_URL}/identity/studies`));
+  },
+
+  async listIdentityMeasurements(): Promise<types.IdentityMeasurementIndex> {
+    return handleResponse<types.IdentityMeasurementIndex>(
+      await fetch(`${BASE_URL}/identity/measurements`));
+  },
+
+  async identityMeasurement(name: string): Promise<types.IdentityMeasurementView> {
+    return handleResponse<types.IdentityMeasurementView>(
+      await fetch(`${BASE_URL}/identity/measurements/${encodeURIComponent(name)}`));
+  },
+
+  async identityAudit(name: string): Promise<types.IdentityAuditView> {
+    return handleResponse<types.IdentityAuditView>(
+      await fetch(`${BASE_URL}/identity/audits/${encodeURIComponent(name)}`));
+  },
+
+  // TG19.2. Both are GETs that COMPUTE rather than decide: no route stores a tolerance,
+  // approves a join, or records an acceptance.
+  async joinDistribution(params: { record?: string; population: string; excludeLongitudeAtOrAbove?: number | null }): Promise<types.JoinDistribution> {
+    const query = new URLSearchParams();
+    if (params.record) query.set('record', params.record);
+    query.set('population', params.population);
+    if (params.excludeLongitudeAtOrAbove !== undefined && params.excludeLongitudeAtOrAbove !== null) {
+      query.set('exclude_longitude_at_or_above', String(params.excludeLongitudeAtOrAbove));
+    }
+    return handleResponse<types.JoinDistribution>(
+      await fetch(`${BASE_URL}/identity/join-distribution?${query.toString()}`));
+  },
+
+  async toleranceComponents(): Promise<types.ToleranceComponents> {
+    return handleResponse<types.ToleranceComponents>(
+      await fetch(`${BASE_URL}/identity/tolerance/components`));
+  },
+
+  async positionTolerance(params: { catalogueRadiusKm?: number | null; separationKm?: number | null; observation?: string }): Promise<types.PositionToleranceView> {
+    const query = new URLSearchParams();
+    if (params.catalogueRadiusKm !== undefined && params.catalogueRadiusKm !== null) {
+      query.set('catalogue_radius_km', String(params.catalogueRadiusKm));
+    }
+    if (params.separationKm !== undefined && params.separationKm !== null) {
+      query.set('separation_km', String(params.separationKm));
+    }
+    if (params.observation) query.set('observation', params.observation);
+    return handleResponse<types.PositionToleranceView>(
+      await fetch(`${BASE_URL}/identity/tolerance?${query.toString()}`));
+  },
+
   async gateSurface(): Promise<types.GateSurface> {
     return handleResponse<types.GateSurface>(await fetch(`${BASE_URL}/gate`));
   },

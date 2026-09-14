@@ -1,0 +1,105 @@
+{
+  "schema": "t4e36-wrapped-acquisition-declaration/v1",
+  "status": "DRAFTED_NOT_ADOPTED",
+  "task": "T4E.36",
+  "artefact": "the complementary ERA5 vorticity segment needed to test east-edge support without replacing the acquired T4E.18 record",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by GitHub Copilot at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "drafted_on": "2026-09-12",
+  "why_this_exists": {
+    "diagnostic": "T4E.35 found that the four largest finite raw-field join errors and the sole no-feature row are all nearest the existing crop's east edge. The raw-field median nearest-feature error is 1617.7 km for the seven rows within two degrees of any edge and 35.9 km for the eleven interior rows.",
+    "limitation": "Those rows had already been inspected, RUBY is an east-edge counterexample, and the association is post-hoc. T4E.35 therefore selects this experiment but supplies neither its acceptance nor evidence that truncation caused an error.",
+    "question": "Does adding the missing eastward support, while holding the population, variable, extraction and catalogue tolerance fixed, make the raw-field catalogue join meet the already declared T4E.18 usability gates?"
+  },
+  "source_evidence": {
+    "edge_audit": "measurements/t4e35_edge_support_audit.json",
+    "edge_audit_source_sha256": "4f2d10b2d392e83484a64a37263f48bc51c3ad1c13bc71ae4276d24762513c7b",
+    "baseline_join": "measurements/t4e28_join_rerun.json",
+    "baseline_record": "data/cds_downloads/t4e18_vorticity/*.nc"
+  },
+  "complementary_request": {
+    "variables": [
+      "vo"
+    ],
+    "date_start": "2018-01-01",
+    "date_end": "2021-12-31",
+    "hours_utc": [
+      0,
+      6,
+      12,
+      18
+    ],
+    "lat_min": -58.0,
+    "lat_max": -18.0,
+    "lon_min": -180.0,
+    "lon_max": -140.0,
+    "pressure_levels": [
+      850
+    ],
+    "grid_degrees": 0.25,
+    "n_levels_analysis": 3,
+    "expected_monthly_shards": 48,
+    "expected_frames": 5844,
+    "expected_segment_shape": [
+      161,
+      161
+    ]
+  },
+  "wrapped_geometry": {
+    "parent_longitude": [
+      140.0,
+      180.0
+    ],
+    "complement_longitude_as_requested": [
+      -180.0,
+      -140.0
+    ],
+    "complement_longitude_after_wrapping": [
+      180.0,
+      220.0
+    ],
+    "canonical_joined_longitude": [
+      140.0,
+      220.0
+    ],
+    "expected_joined_longitude_points": 321,
+    "seam_rule": "The 180E and -180 coordinates describe one meridian. Verify their values agree within the source encoding tolerance, retain it once, and refuse a mismatch; ordinary concatenation would duplicate one column and misstate the geometry.",
+    "the_parent_record_must_remain": "The 140E..180E T4E.18 record remains byte-for-byte unchanged and separately addressable. The complementary segment is a second content-addressed acquisition, never a replacement or in-place extension."
+  },
+  "frozen_population": {
+    "source": "the same 18 deepest-interior per-storm observations recorded by T4E.28",
+    "selection": "Do not rerun the catalogue census over the wider longitude range and do not admit new storms. The experiment changes spatial field support around the already selected storm-times, not the evaluation population.",
+    "east_edge_stress_rows": [
+      "JOSIE",
+      "SARAI",
+      "GRETEL",
+      "ANA",
+      "NIRAN"
+    ],
+    "counterexample_retained": "RUBY is one degree from the east edge but has a 67.6 km raw-field error. It remains in the population and prevents east-edge position from being treated as sufficient by definition."
+  },
+  "frozen_extraction": {
+    "sign": "Negate southern-hemisphere relative vorticity before extraction.",
+    "extractor": "src.core.extraction.extract",
+    "n_surrogates": 99,
+    "seed": 1234,
+    "primary_path": "raw_field: representation 'identity'",
+    "diagnostic_path": "swt_planes: wavelet 'db2', level 3, all extractable planes pooled",
+    "forbidden_changes": "No extractor, null, alpha, seed, wavelet, level, tolerance, catalogue row or population change belongs in this experiment."
+  },
+  "gate_declared_before_acquisition": {
+    "operational_gate": "The complementary request must complete all 48 integrity-checked monthly shards and exactly 5844 timestamps. The wrapped seam must pass the declared coordinate and value check before any extraction runs.",
+    "primary_scientific_path": "raw_field, fixed because T4E.28 reproduced it as the lower-error direct representation before this declaration existed",
+    "condition_1": "At least 9 of the fixed 18 storms have one or more raw-field features inside their own catalogue radius.",
+    "condition_2": "At least 9 of the fixed 18 storms have three or more raw-field features inside their own catalogue radius.",
+    "decision": "PASS requires both conditions. Otherwise the result is FAIL if all declared inputs and rows are measurable, or INVALID/REFUSED with the missing support named. SWT-plane counts cannot rescue a raw-field failure.",
+    "falsification": "Failure of either unchanged 9-of-18 gate falsifies added eastward support as a sufficient repair for the acquired-record identity blocker under this extraction procedure. It does not establish that crop support contributes nothing.",
+    "paired_diagnostics": "Report old and widened feature count, full sorted distance list, nearest distance and inside-radius count for every storm, with the five named east-edge stress rows and RUBY visible. These diagnostics explain the verdict but select no new threshold."
+  },
+  "governing_rules": [
+    "Planning and validation are offline. Acquisition requires a separate explicit network authorisation after this declaration is reviewed and adopted.",
+    "Code does not adopt a scientific declaration for a person.",
+    "The 2022-2023 forecast-test period remains unacquired and unopened.",
+    "PASS, FAIL, INVALID and REFUSED remain distinct terminal meanings."
+  ],
+  "claim_boundary": "A PASS would establish only that added eastward support makes the fixed raw-field join usable under the inherited gate on these 18 development-period storms. It would not establish crop truncation as the cause, approve a mining radius, demonstrate kind recurrence, open forecast-test data or make a claim about the atmosphere."
+}

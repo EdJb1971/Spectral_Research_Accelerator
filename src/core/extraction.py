@@ -674,6 +674,14 @@ def _window(values: np.ndarray, centre: Tuple[int, int], radius: int,
     return values[np.ix_(rows, cols)], rows_raw, cols_raw
 
 
+#: How far past the frame's own extent a measured scale may go before it is refused. A
+#: Gaussian whose width equals the frame is already unmeasurable from that frame, so this is
+#: generous by construction: it exists to stop a diverged fixed point, not to trim real
+#: features, and anything a real extraction produces is smaller than the frame by orders of
+#: magnitude. See the refusal in `_localise`.
+_MAX_MEASURABLE_SCALE_CELLS = 1.0
+
+
 def _square_capture(radius: float, sigma: float) -> float:
     """Fraction of an isotropic Gaussian's integral inside a square of half-width `radius`.
 
@@ -934,6 +942,19 @@ def _localise(values: np.ndarray, cell: Tuple[int, int], peak: float, baseline: 
                 return None
             sigma = math.sqrt(total / (2.0 * math.pi * amplitude * capture))
         if not math.isfinite(sigma) or sigma <= 0.0:
+            return None
+        # The capture correction above is a fixed-point iteration, and it DIVERGES when the
+        # excess is broader than the window: a larger sigma captures less of itself, dividing
+        # by a smaller capture returns a larger sigma, and eight rounds of that can leave a
+        # width hundreds of times the frame. The finite check does not catch it, because a
+        # runaway here is a large finite number rather than an infinity. Measured on a real
+        # ERA5 SWT level_1/HH plane: sigma 72,404 cells on a 161-cell frame, which then asked
+        # `_disc_amplitude` for a 42.5 TiB index array and killed the pass.
+        #
+        # A feature wider than the frame was not measured by the frame. Refuse it by name --
+        # `unmeasurable_scale`, which the caller already counts -- rather than act on a number
+        # the data does not support.
+        if sigma > _MAX_MEASURABLE_SCALE_CELLS * float(max(values.shape)):
             return None
         refined = _disc_amplitude(values, (cy, cx), sigma, baseline, periodic)
         if refined is not None and refined > 0.0:

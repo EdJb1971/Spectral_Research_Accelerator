@@ -598,3 +598,183 @@ def test_one_calibration_covers_the_whole_sequence_so_a_birth_cannot_be_the_thre
     assert len(thresholds) == 1
     combined = FeatureSet([f for r in results for f in r])
     assert len(combined.frames()) == len(results)
+
+
+# ------------- A diverged scale is refused by name, not acted on
+#
+# `_localise` corrects the integral estimator for the fraction of a Gaussian its window
+# captures, and that correction is a fixed point: a larger sigma captures less of itself, and
+# dividing by the smaller capture returns a larger sigma. When the excess is broader than the
+# window, or when the refined amplitude collapses toward zero, it diverges.
+#
+# Found on a real ERA5 SWT level_1/HH plane, where it produced sigma 72,404 cells on a 161-cell
+# frame and then asked for a 42.5 TiB index array, killing the pass. Every frame of the acquired
+# record was unextractable because of it. The finite check upstream does not catch this: a
+# runaway here is a large finite number, not an infinity.
+
+
+def test_a_diverged_scale_is_refused_rather_than_acted_on():
+    """The guard, exercised on the path that actually diverged.
+
+    On later refinement rounds the amplitude is the refined disc amplitude rather than the peak
+    height, so an amplitude collapsing toward zero sends sigma up without bound. The refusal
+    must fire before that width reaches `_disc_amplitude`, because the allocation there is
+    proportional to it.
+    """
+    import numpy as np
+
+    import src.core.extraction as extraction
+
+    field = np.zeros((48, 48))
+    field[16:32, 16:32] = 1.0
+    field[24, 24] = 1.0000001
+
+    offered = []
+    original = extraction._disc_amplitude
+
+    def collapsing(values, centre, sigma, baseline, periodic):
+        offered.append(sigma)
+        return 1e-12                      # a refined amplitude that has collapsed
+
+    extraction._disc_amplitude = collapsing
+    try:
+        measured = extraction._localise(
+            field, (24, 24), float(field[24, 24]), float(np.median(field)),
+            (False, False), 2.0, 8)
+    finally:
+        extraction._disc_amplitude = original
+
+    assert measured is None, "a diverged scale was returned instead of refused"
+    limit = extraction._MAX_MEASURABLE_SCALE_CELLS * max(field.shape)
+    assert all(sigma <= limit for sigma in offered), (
+        "a width past the frame reached _disc_amplitude, where the allocation is proportional "
+        "to it: %r" % (offered,))
+
+
+def test_the_refusal_is_counted_by_name_and_does_not_end_the_pass():
+    """`unmeasurable_scale` already existed; it simply was not reachable.
+
+    A missing feature is a fact a receipt can carry. A pass that dies on one plane is not.
+    """
+    import numpy as np
+
+    import src.core.extraction as extraction
+    from src.core.domain import AxisSpec
+    from src.core.extraction import ExtractionField, extract
+
+    rng = np.random.default_rng(11)
+    values = rng.normal(0.0, 1.0, (48, 48))
+    values[24, 24] += 40.0
+
+    original = extraction._disc_amplitude
+    extraction._disc_amplitude = lambda *a, **k: 1e-12
+    try:
+        result = extract(
+            ExtractionField(
+                values=values,
+                axes=(AxisSpec("row", "space", units="cells", ordinal=0),
+                      AxisSpec("col", "space", units="cells", ordinal=1)),
+                domain="synthetic", dataset="diverged_scale", variable="amplitude",
+                units=None, time=0.0, time_units="frames", representation="identity"),
+            n_surrogates=19, seed=3)
+    finally:
+        extraction._disc_amplitude = original
+
+    rejected = result.describe()["rejected"]
+    assert rejected["unmeasurable_scale"] >= 1, rejected
+    assert isinstance(list(result), list), "the pass did not complete"
+
+
+def test_the_bound_is_generous_enough_not_to_trim_a_real_feature():
+    """It exists to stop a diverged fixed point, not to narrow the extractor.
+
+    A Gaussian whose width equals the frame is already unmeasurable from that frame, so a
+    limit at the frame's own extent cannot reject anything a real extraction produces.
+    """
+    import numpy as np
+
+    from src.core.domain import AxisSpec
+    from src.core.extraction import (
+        _MAX_MEASURABLE_SCALE_CELLS, ExtractionField, extract)
+
+    assert _MAX_MEASURABLE_SCALE_CELLS == 1.0
+
+    size, sigma = 64, 3.0
+    rows, cols = np.mgrid[0:size, 0:size]
+    values = 5.0 * np.exp(-(((rows - 32.0) ** 2 + (cols - 32.0) ** 2) / (2.0 * sigma ** 2)))
+    result = extract(
+        ExtractionField(
+            values=values,
+            axes=(AxisSpec("row", "space", units="cells", ordinal=0),
+                  AxisSpec("col", "space", units="cells", ordinal=1)),
+            domain="synthetic", dataset="one_clean_gaussian", variable="amplitude",
+            units=None, time=0.0, time_units="frames", representation="identity"),
+        n_surrogates=99, seed=5)
+
+    features = list(result)
+    assert len(features) == 1, [f.location.coords for f in features]
+    assert result.describe()["rejected"]["unmeasurable_scale"] == 0
+    measured = float(features[0].spatial_scale.value)
+    assert measured < _MAX_MEASURABLE_SCALE_CELLS * size
+    assert 1.0 < measured < 12.0, measured
+
+
+# ------------- The validity gate T4E.20 declared and did not implement
+#
+# A gate expressed only in prose is not a gate. T4E.20 disqualified a synthetic background
+# yielding "hundreds, or none" of features and its code tested only the upper bound, so a
+# background yielding none passed and the slice ran on a field where a planted feature faced no
+# competition. These tests pin the case that slipped through.
+
+
+def test_the_gate_rejects_a_background_that_yields_no_features():
+    """The exact case T4E.20 declared, did not implement, and was let through."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([0] * 12)
+
+    assert verdict["passed"] is False
+    assert any("no features at all" in reason for reason in verdict["reasons"])
+    assert any("T4E.20" in reason for reason in verdict["reasons"]), (
+        "the refusal should name the failure it was written for")
+
+
+def test_the_gate_rejects_a_swarming_background_too():
+    """An empty background and a swarming one are both unrepresentative."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([6, 7, 8, 900])
+
+    assert verdict["passed"] is False
+    assert any("ceiling" in reason for reason in verdict["reasons"])
+
+
+def test_the_gate_admits_a_background_at_the_records_density():
+    """The record yields a median of 7 with a range of 3 to 10 under identical extraction."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([3, 5, 7, 7, 8, 10])
+
+    assert verdict["passed"] is True
+    assert verdict["reasons"] == []
+    assert verdict["median"] == 7
+
+
+def test_the_gate_refuses_when_nothing_was_measured():
+    """An empty measurement is not a pass; it is a check that never ran."""
+    from src.benchmarks.synthetic_backgrounds import feature_density_gate
+
+    verdict = feature_density_gate([])
+
+    assert verdict["passed"] is False
+    assert verdict["n_frames"] == 0
+    assert any("nothing was checked" in reason for reason in verdict["reasons"])
+
+
+def test_the_declared_band_is_the_one_the_measurement_used():
+    """The band was declared before the measurement and is not moved afterwards."""
+    from src.benchmarks.synthetic_backgrounds import (
+        DECLARED_FRAME_CEILING, DECLARED_MEDIAN_BAND)
+
+    assert DECLARED_MEDIAN_BAND == (4, 10)
+    assert DECLARED_FRAME_CEILING == 40

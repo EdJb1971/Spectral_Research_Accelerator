@@ -1,0 +1,88 @@
+{
+  "schema": "t4e26-peeled-null-calibration/v1",
+  "status": "declared_before_measurement",
+  "task": "T4E.26",
+  "artefact": "whether a null estimable from real data closes any of the self-inflation T4E.25 measured, and what it costs in contamination and in the meaning of the reported significance",
+  "declared_by": "Edward Jonathan Bentley, maintainer (scientific choice); drafted by Claude Opus 5 at the maintainer's direction and NOT VALID until the maintainer has reviewed and adopted it",
+  "declared_on": "2026-09-11",
+
+  "why_this_exists": "T4E.25 established that alpha is not the lever. A tenfold relaxation of the declared error level moved the threshold about 20 per cent and left 65 per cent of configurations holding a permanently invisible feature. The dominant term is a level shift: a cut calibrated on a scene containing signal sits 3.53x above the cut on that scene's own background, because the plantings' power enters every surrogate of the planted field. That is the declared null behaving as declared, and it is also the whole of the coverage problem T4E.24 found. The question this task asks is the one T4E.25 left open and did not answer: is any part of that 3.53x reachable by a procedure that could actually run on a real record, where the signal-free background does not exist?",
+
+  "the_candidate_and_it_is_one_candidate": {
+    "name": "single-round peeled-null calibration",
+    "the_procedure": "Round 0 is the pipeline exactly as it stands: calibrate on the scene at alpha = 0.05, extract. Then subtract from the scene, for every feature round 0 reported, the isotropic Gaussian the extractor itself fitted -- amplitude from `magnitude - baseline`, width from `scale_cells`, centre from `index_position`, all read from the feature's own provenance and none of them refitted here. Recalibrate on that residual. Re-extract from the ORIGINAL scene using the residual-derived cut. One round. Stop.",
+    "why_re_extraction_is_from_the_original_and_not_the_residual": "The residual has had the bright features removed, so extracting from it would find everything except the features the pipeline is most confident about. The residual's only job is to supply a null less contaminated by the signal it is meant to be a null for.",
+    "why_one_round_and_not_iterated_to_convergence": "An iteration count is a free parameter, and this programme has three falsified criteria whose free parameter was chosen after seeing what it did. One round is the only count nameable without choosing one. If one round is not enough, that is a result about one round and a successor may declare more -- blind, and before measuring.",
+    "no_variants_are_evaluated": "R20. No trimmed-spectrum null, no neighbouring-frame null, no robust-spectrum null and no second peeling rule is measured here. Ranking several nulls against each other on evidence already inspected four times is precisely the horse race the rule forbids."
+  },
+
+  "the_blindness_claim_and_its_limit_stated_plainly": {
+    "a_feasibility_probe_was_run_before_this_was_written": "On ONE scene, to establish that the procedure is implementable at all from the fields the extractor already publishes. It showed the threshold falling from 19.23 to 10.15 in units of the background's robust width against an oracle of 4.38, and re-extraction finding 8 of 9 plantings against 4 at round 0.",
+    "so_the_prediction_below_is_NOT_blind_and_is_not_presented_as_if_it_were": "It is informed by that probe. T4E.12 met this exact situation when k followed a probe, and reserved fresh partitions so a later structural choice could be blind. Nothing equivalent is available here and none is invented: these are T4E.24's scenes, and this slice is their fourth inspection.",
+    "what_stops_the_acceptance_being_fitted_to_the_probe": "The two acceptance bars are taken VERBATIM from T4E.25 -- a 0.15 absolute rise in intact-configuration coverage, and fewer than one spurious feature per scene -- and T4E.25 fixed both before this probe existed. No bar in this declaration was chosen after seeing a peeled number.",
+    "what_this_evidence_therefore_cannot_support": "Any confirmatory claim. Everything measured here is development evidence about a procedure, on scenes inspected four times over. A peeled null that passes here has not been validated; it has been shown not to fail on the evidence that motivated it."
+  },
+
+  "the_cost_that_is_not_a_number_and_must_not_be_traded_against_one": {
+    "the_reported_significance_changes_meaning": "NullCalibration's stated hypothesis is `no peak in this frame exceeds the strongest peak of a field with the same power spectrum and randomised phases`. Under a peeled null the ensemble no longer has the same power spectrum as the frame -- it has the residual's. So every p-value reported through a peeled cut is against a different hypothesis, and a receipt that quoted it as though nothing had changed would be false.",
+    "why_that_is_not_automatically_disqualifying": "The residual's spectrum is arguably the better null for the question actually being asked, which is whether THIS peak is distinguishable from the background it sits on rather than from a field that includes itself. That is an argument, it is labelled as one, and this slice does not settle it.",
+    "what_the_slice_must_therefore_do": "Report the change in meaning as a finding in its own right, in words, beside every coverage number -- never as a caveat beneath one. A procedure that improves coverage by redefining what a detection claims is not a free improvement, and if it is adopted later that adoption must state the new hypothesis explicitly."
+  },
+
+  "the_designs_strongest_objection_to_itself": {
+    "the_extractor_fits_a_shape_it_declares_and_the_plantings_do_not_have_it": "`local_maximum_extractor` declares `shape_model: isotropic_gaussian_on_a_flat_baseline`. The plantings are stretched by factors of 1.0, 1.5 and 2.5. Subtracting an isotropic fit from a stretched feature leaves a residual with lobes along the stretch axis, and those lobes are then measured against a threshold the same subtraction has just LOWERED. So the procedure's failure mode is to manufacture the very features it then reports.",
+    "this_is_predicted_to_be_visible_and_is_measured_separately": "Spurious features are split into those falling within 2 fitted widths of a peeled feature -- residual artefacts -- and those elsewhere. Reporting one total would let manufactured features hide inside a background rate.",
+    "and_it_bites_hardest_where_the_asymmetry_is_greatest": "So the artefact count is additionally reported against the stretch factor of the nearest peeled planting, which is known by construction here and would not be on a real record."
+  },
+
+  "what_is_measured": {
+    "1_the_gap_closed": "Per scene, the threshold at round 0, after peeling, and on the bare background oracle, in units of the background's robust width. Reported as the full distribution of the fraction of the oracle gap closed, never only its median.",
+    "2_coverage": "Feature recovery, the presence-count distribution, and both configuration-coverage measures -- recoverable in principle, and intact across all six scenes -- exactly as T4E.24 and T4E.25 report them.",
+    "3_contamination": "Extracted features matching no planting, per scene, split into residual artefacts and others as above, and as a fraction of everything extracted.",
+    "4_who_is_recovered": "The peak-to-background ratio distribution of plantings newly recovered relative to round 0, to establish whether peeling reaches the faint population or merely re-finds the bright one.",
+    "5_the_oracle_remains_an_oracle": "The background-calibrated figures are reported as a ceiling only. They are not available on a real record and no claim is made that they are reachable."
+  },
+
+  "the_prediction_declared_before_the_measurement": {
+    "what_I_predict": "Peeling closes a majority of the threshold gap and raises intact-configuration coverage past the 0.15 bar, and the cost appears as residual artefacts concentrated near peeled features at high stretch rather than as a uniform rise in background contamination.",
+    "what_would_falsify_it": "Intact-configuration coverage rising by less than 0.15 absolute, or spurious features reaching one per scene, or the newly recovered plantings having a ratio distribution indistinguishable from those already found at round 0 -- which would mean peeling re-found the bright population rather than reaching the faint one.",
+    "the_outcome_that_would_be_worst_and_is_not_ruled_out": "Coverage rises AND artefacts stay low AND the significance question is left unresolved, because that is the outcome most likely to be adopted without anyone confronting the change in hypothesis. The slice is written to make that outcome uncomfortable rather than convenient."
+  },
+
+  "what_this_slice_will_not_do": [
+    "It will not adopt a peeled null, change any default, or alter NullCalibration, local_maximum_extractor or the frame-maximum statistic.",
+    "It will not evaluate any null construction other than the one candidate declared above (R20).",
+    "It will not iterate beyond one round or report what a second round would give.",
+    "It will not re-measure any identity criterion, and it supersedes neither T4E.24 nor T4E.25.",
+    "It will not present the oracle as an achievable operating point.",
+    "It will not touch the reserved seeds 720-735 or 880-895.",
+    "It will not touch the 2022-2023 forecast-test period.",
+    "It will not quote its numbers for any domain other than the one they were measured on."
+  ],
+
+  "acceptance_for_this_slice": {
+    "condition_1": "The coded validity gate passes on the re-extracted scenes, or the slice reports that its evidence is not representative and stops, without tuning anything.",
+    "condition_2": "Round 0 reproduces T4E.24 and T4E.25's alpha = 0.05 figures exactly on the shared seed. If it does not, that discrepancy is the result and nothing else is interpreted until it is explained.",
+    "condition_3": "The fraction of the oracle gap closed is reported as a distribution over scenes, not a mean; and contamination is reported split into residual artefacts and others.",
+    "condition_4": "The prediction is adjudicated against the falsification condition stated above, in the direction the numbers actually fall.",
+    "condition_5": "The change in the meaning of the reported significance is stated in the receipt as a finding, beside the coverage numbers rather than beneath them.",
+    "condition_6": "If the procedure neither closes the gap nor manufactures artefacts, that null result is reported as such."
+  },
+
+  "what_transfers_to_other_domains_and_what_does_not": {
+    "the_mechanism_is_domain_general": "Any domain calibrating a null on data containing the signal it is testing for inherits the same self-inflation, and the same procedure is available to it. The change in the meaning of the p-value transfers with it, unchanged and undiminished.",
+    "the_numbers_are_not": "The gap, the fraction closed and the artefact rate belong to 850 hPa relative vorticity over this crop under this planting, and are quoted for no other domain.",
+    "what_that_obliges": "A domain adopting a peeled null owes its own measurement of the artefact rate, because the artefact mechanism depends on how badly the extractor's declared shape model fits that domain's features."
+  },
+
+  "governing_rules": [
+    "Declare the prediction, and the design's strongest objection to itself, before the measurement.",
+    "Disclose a probe that informed a declaration rather than letting the declaration read as blind.",
+    "A named refusal is preferable to an unsupported number.",
+    "Evaluate the candidate alone; no horse race (R20).",
+    "Already inspected data do not become untouched by renaming them. These scenes are on their fourth inspection.",
+    "Code does not sign a scientific declaration for a person; this file is not adopted until the maintainer says so."
+  ],
+
+  "claim_boundary": "This measures one null-estimation procedure on synthetic evidence with known truth, at one operating point, for one round, on scenes already inspected four times. It settles nothing about the atmosphere, nothing about any real cyclone, and nothing about whether any identity criterion is correct. It licenses no change to any default and no adoption of a peeled null. A pass here is not validation; it is a failure to fail on the evidence that motivated the question."
+}

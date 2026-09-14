@@ -46,14 +46,14 @@ def test_laboratory_artifact_round_trip_restores_exact_weights_and_identity(tmp_
     artifact = save_laboratory_artifact(
         tmp_path / "run-a", original, model_config=MODEL_CONFIG,
         representation_config=REPRESENTATION_CONFIG,
-        training_provenance=TRAINING_PROVENANCE, model_name="professor-model-fixture")
+        training_provenance=TRAINING_PROVENANCE, model_name="external-model-fixture")
     restored = TinyResidualCoefficientModel(2)
     loaded = load_laboratory_artifact(
         tmp_path / "run-a", restored, expected_model_config=MODEL_CONFIG,
         expected_representation_config=REPRESENTATION_CONFIG)
 
     assert loaded == artifact
-    assert loaded.model_name == "professor-model-fixture"
+    assert loaded.model_name == "external-model-fixture"
     assert len(loaded.checkpoint_sha256) == len(loaded.config_sha256) == 64
     assert loaded.training_provenance["dataset_contract_hash"] == "fixture-dataset-contract"
     for expected, actual in zip(original.parameters(), restored.parameters()):

@@ -730,6 +730,7 @@ export interface DatasetOperationDecision {
   available: boolean;
   reason_code: string;
   reason: string;
+  planning_path: { api_path: string; plan_schema: string; workspace: string } | null;
   requirements: Array<{ fact: string; label: string; satisfied: boolean | null }>;
 }
 
@@ -744,6 +745,22 @@ export interface DatasetCapabilityProfile {
   capabilities: Array<{ name: string; label: string; value: boolean | null }>;
   operations: Record<string, DatasetOperationDecision>;
   basis: Record<string, unknown>;
+  claim_boundary: string;
+}
+
+export interface SampleTablePlanningHandoff {
+  schema: 'spectral.sample-table-planning-handoff.v1';
+  status: 'READY_FOR_PLANNING';
+  handoff_sha256: string;
+  object: { kind: string; identity: string; filename: string; phase: string };
+  declaration: SampleTableDeclaration;
+  capability_profile_sha256: string;
+  operation: { id: string; name: string; reason_code: string };
+  destination: { kind: 'existing_ingress_planner'; method: 'POST'; api_path: string;
+    plan_schema: string; workspace: string };
+  request: { transport: 'multipart/form-data'; file_binding_sha256: string; delimiter: string;
+    declaration: SampleTableDeclaration };
+  automatic_actions: [];
   claim_boundary: string;
 }
 
@@ -1280,6 +1297,49 @@ export interface ReviewSurface {
   reviews: ReviewArtifactRow[];
   unreadable: Array<{ file: string; refused_because: string }>;
   absence_note: string | null;
+}
+
+export interface FindingConversationContext {
+  schema: 'finding-conversation-context/v1';
+  study_id: string;
+  bundle_sha256: string;
+  bundle_revision: number;
+  glossary: string;
+  formal_review_count: number;
+  run_count: number;
+  model_id: string;
+  key_present: boolean;
+  key_variables: string[];
+  recording: 'OFF';
+  what_is_loaded: string[];
+  claim_boundary: string;
+  network_used: false;
+}
+
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface FindingConversationAnswer {
+  schema: 'ephemeral-finding-answer/v1';
+  study_id: string;
+  bundle_sha256: string;
+  answer: string;
+  records_used: string[];
+  cautions: string[];
+  suggested_questions: string[];
+  usage: Record<string, unknown>;
+  recorded: false;
+  claim_boundary: string;
+}
+
+export interface SavedFindingDiscussion {
+  saved: true;
+  file: string;
+  discussion_sha256: string;
+  recorded: true;
+  claim_boundary: string;
 }
 
 /**
@@ -2755,6 +2815,188 @@ export interface ExperimentQualificationRecord {
   claim_boundary: string;
 }
 
+export interface G17PoolSurface {
+  schema: string;
+  readiness: {
+    status: string; profile_count: number; shortfall: number; exchangeability: string;
+    assessment_sha256: string;
+  };
+  qualification: {
+    target_count: number; refused_target_count: number;
+    refused_targets: Array<{ tic_id: string; reason: string }>;
+  };
+  assessment: {
+    candidate_count: number; records_reaching_minimum: number;
+    pool_size: { minimum: number; median: number; maximum: number };
+  };
+  packet: {
+    packet_sha256: string; core_size: number; recommended_size: number;
+    alternatives_per_recommended_record: number; recommended_record_ids: string[];
+    exchangeability: string; claim_boundary: string;
+  };
+  review_request: {
+    status: string; record_ids: string[];
+    human_inputs_required: { exchangeability: string[]; affirmation: string };
+    verified_facts: Record<string, string | number>;
+    claim_boundary: string;
+  };
+  review: {
+    status: 'NOT_WRITTEN' | 'WRITTEN_NOT_ADOPTED' | 'ADOPTED'; adopted: boolean;
+    declaration?: Record<string, any>; declaration_sha256?: string;
+    adoption?: Record<string, any>;
+  };
+  archived_lineage_bug_artifacts: string[];
+  operations: Array<{ operation: string; available_in_ui: boolean; reason?: string }>;
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+/** T4E.41: one condition of T4E.8's acceptance, with what would license it and what would not. */
+export interface IdentityAcceptanceCondition {
+  id: string;
+  name: string;
+  requires: string;
+  licensed_by: string;
+  insufficient: string;
+  status: 'NO_EVIDENCE' | 'EVIDENCE_CLAIMED_NOT_ADOPTED' | 'CONDITION_MET' | 'CONDITION_NOT_MET';
+  why: string | null;
+  evidence: Array<Record<string, any>>;
+}
+
+export interface IdentityAcceptanceState {
+  schema: string;
+  task: string;
+  declaration: string;
+  declaration_sha256: string;
+  declaration_status: string;
+  acceptance_adopted: boolean;
+  identity_target: string;
+  why_this_exists: Record<string, string>;
+  what_this_declaration_is_not: string[];
+  target_and_scope: Record<string, any>;
+  what_acceptance_would_and_would_not_license: Record<string, string>;
+  declaration_file: string;
+  verdict_semantics: Record<string, string>;
+  adoption: Record<string, any>;
+  bound_evidence: {
+    checked: number;
+    all_verified: boolean;
+    drifted: string[];
+    absent: string[];
+    checks: Array<{ artefact: string; status: string; expected_sha256: string;
+                    observed_sha256: string | null }>;
+  };
+  conditions: IdentityAcceptanceCondition[];
+  conditions_met: number;
+  conditions_total: number;
+  VERDICT: 'INSUFFICIENT_EVIDENCE' | 'T4E8_NOT_ACCEPTED'
+    | 'ALL_CONDITIONS_MET_AWAITING_HUMAN_ACCEPTANCE';
+  code_may_emit_accepted: false;
+  what_does_not_discharge_this: string[];
+  network_used: boolean;
+  claim_boundary: string;
+  receipt_sha256: string;
+}
+
+// ------------------------------------------- T4E.39 the temporal reference holdout
+
+/** One performed stage of the holdout. The browser renders the order the server reports and
+ *  holds no copy of it: a second copy of a scientific order of operations is a second
+ *  experiment waiting to happen. */
+export interface HoldoutStage {
+  stage: string;
+  title: string;
+  status: string;
+  performed_by: string;
+  artifact: string | null;
+  digest: string | null;
+  facts: Record<string, any>;
+  boundary: string;
+}
+
+export interface HoldoutBasinWalk {
+  status: string;
+  steps: number;
+  seed_grid_index: [number, number];
+  centre: { lat: number; lon: number; field_value: number; grid_index: [number, number] };
+  path: Array<{ lat: number; lon: number; field_value: number; grid_index: [number, number] }>;
+}
+
+export interface HoldoutRow {
+  storm: string;
+  sid: string;
+  time: string;
+  classification: string;
+  catalogue_position: { lat: number; lon: number };
+  catalogue_radius_km: number;
+  catalogue_to_mslp_km: number | null;
+  catalogue_to_vorticity_km: number | null;
+  mslp_to_vorticity_km: number | null;
+  mslp_basin: HoldoutBasinWalk;
+  negated_vorticity_basin: HoldoutBasinWalk;
+}
+
+export interface HoldoutDecision {
+  counts: Record<string, number>;
+  population_denominator: number;
+  strict_majority_needed: number;
+  minimum_selected_storms: number;
+  outcome: string;
+  is_acceptance_verdict: boolean;
+}
+
+export interface HoldoutSurface {
+  schema: string;
+  task: string;
+  outcome: string;
+  verdict: string;
+  decision: HoldoutDecision;
+  margin_over_strict_majority: number;
+  one_row_would_change_the_outcome: boolean;
+  stages: HoldoutStage[];
+  review_request: {
+    status: string;
+    reviewed_outcome: string;
+    reviewed_verdict: string;
+    population_denominator: number;
+    strict_majority_needed: number;
+    verified_facts: Record<string, any>;
+    human_inputs_required: { boundary_assessment: string[]; affirmation: string } & Record<string, any>;
+    claim_boundary: string;
+  };
+  review: {
+    status: 'NOT_WRITTEN' | 'WRITTEN_NOT_ADOPTED' | 'ADOPTED';
+    adopted?: boolean;
+    declaration?: Record<string, any>;
+    declaration_sha256?: string;
+    adoption?: Record<string, any>;
+    binds_current_result?: boolean;
+  };
+  artifacts: string[];
+  operations: Array<{ operation: string; available_in_ui: boolean; reason?: string }>;
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+export interface HoldoutRows {
+  schema: string;
+  measurement_receipt_sha256: string;
+  method: Record<string, any>;
+  decision: HoldoutDecision;
+  rows: HoldoutRow[];
+  network_used: boolean;
+  claim_boundary: string;
+}
+
+export interface HoldoutArtifact {
+  schema: string;
+  artifact: string;
+  path: string;
+  file_sha256: string;
+  body: Record<string, any>;
+  network_used: boolean;
+}
+
 // ------------------------------------------------------- TG17.7 the guided path
 
 /** One step of the workflow, described by the server. The browser renders these; it holds no
@@ -3192,5 +3434,307 @@ export interface GateReceiptView {
   scientific_verdict: string;
   power_adjudication: Record<string, any>;
   claim_boundary: string;
+  network_used: boolean;
+}
+
+/** T4E.8 slice 4: the identity declaration surface. A refusal is a value here, not an error. */
+export interface IdentityEvidenceCell {
+  evidence_class: string;
+  admitted: boolean;
+  refusal: string | null;
+  caveat?: string | null;
+  label_boundary?: string;
+  evidence_provenance?: string;
+  independent_of_record: boolean;
+}
+
+export interface IdentityTargetRow {
+  identity_target: string;
+  recognises: string;
+  does_not_license: string;
+  evidence: IdentityEvidenceCell[];
+}
+
+export interface IdentityEvidenceClass {
+  evidence_class: string;
+  provenance: string;
+  independent_of_record: boolean;
+  label_boundary: string;
+}
+
+export interface IdentityTargets {
+  targets: IdentityTargetRow[];
+  evidence_classes: IdentityEvidenceClass[];
+  choosing_is_not_automated: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityDeclaration {
+  identity_target: string;
+  recognises: string;
+  evidence_class: string;
+  evidence_provenance: string;
+  evidence_independent_of_record: boolean;
+  label_boundary: string;
+  does_not_license: string;
+  caveat: string | null;
+  admissible_evidence: string[];
+}
+
+export interface IdentityAuditSummary {
+  file: string;
+  schema: string | null;
+  status: string | null;
+  approved_mining_radius: number | null;
+  frozen_radius: number | null;
+  identity_declaration: IdentityDeclaration | null;
+  code_revision: string | null;
+  code_dirty: boolean | null;
+  design_sha256: string | null;
+  windows: number;
+  claim_boundary: string | null;
+  /** T4E.22. A summary that could not hold a verdict showed nulls where the finding was. */
+  verdict: unknown;
+  /** Every "what this may not be used for" clause the record carries, under whichever of the
+   *  fifteen names this programme has used. Collected rather than normalised: renaming keys in
+   *  committed evidence to suit a viewer would be rewriting evidence to fit its display. */
+  boundaries: { key: string; text: unknown }[];
+  /** Marks left when a record was corrected or superseded in the open. A corrected record that
+   *  reads as current is the dangerous case, so the mark travels in the summary. */
+  corrected_or_superseded: string[];
+}
+
+export interface IdentityMeasurementIndex {
+  measurements: IdentityAuditSummary[];
+  unreadable: Record<string, string>[];
+  corrected_or_superseded: string[];
+  correction_note: string;
+  measurements_without_a_stated_boundary: string[];
+  boundary_note: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityMeasurementView {
+  measurement: Record<string, any>;
+  summary: IdentityAuditSummary;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityStudy {
+  task: string;
+  declarations: IdentityAuditSummary[];
+  adoptions?: IdentityAuditSummary[];
+  measurements: IdentityAuditSummary[];
+  has_a_result: boolean;
+  declared_before_measured: boolean;
+  corrected_or_superseded: string[];
+}
+
+export interface IdentityStudies {
+  studies: IdentityStudy[];
+  declared_but_not_measured: string[];
+  declared_but_not_measured_note: string;
+  files_outside_any_study: string[];
+  unreadable: Record<string, string>[];
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityAuditIndex {
+  audits: IdentityAuditSummary[];
+  unreadable: Record<string, string>[];
+  audits_without_a_declared_target: string[];
+  undeclared_note: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface IdentityAuditView {
+  audit: Record<string, any>;
+  summary: IdentityAuditSummary;
+  refusals: string[];
+  network_used: boolean;
+}
+
+// TG19.2: the join's bar, in parts. A tolerance that arrives as one number can only be accepted
+// or rejected; these fields exist so it can be disagreed with specifically.
+export interface ToleranceComponent {
+  name: string;
+  km: number | null;
+  source: string;
+}
+
+export interface ToleranceComponents {
+  components: Array<{ name: string; source: string; supplied_by: string }>;
+  combined_by: string;
+  estimator_localisation_km: number;
+  estimator_localisation_cells: number;
+  grid_km_per_cell: number;
+  excluded: string;
+  why_a_missing_uncertainty_is_refused: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface PositionToleranceView {
+  observation: string;
+  total_km: number | null;
+  refused: boolean;
+  refusal: string | null;
+  components: ToleranceComponent[];
+  what_is_not_included: string;
+  separation_km: number | null;
+  // `null` is a third answer and not a `false`: the bar was refused, so nothing was judged.
+  admitted: boolean | null;
+  unexplained_residual_km: number | null;
+  why_no_verdict?: string;
+  no_separation_supplied?: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+/** T4E.29: one join's distances, per storm, with any exclusion shown rather than applied. */
+export interface JoinDistributionRow {
+  storm: string;
+  time: string | null;
+  lat: number | null;
+  lon: number | null;
+  radius_km: number;
+  features: number;
+  nearest_km: number | null;
+  inside_radius: number;
+  distances_km: number[];
+  no_feature: string | null;
+  excluded: boolean;
+  excluded_because: string | null;
+}
+
+export interface JoinDistributionAggregate {
+  storms: number;
+  storms_with_no_feature: number;
+  nearest_km: { min: number; median: number; max: number } | null;
+  at_least_one_inside_radius: number;
+  three_inside_radius: number;
+  of: number;
+}
+
+export interface JoinDistribution {
+  record: string;
+  population: {
+    name: string;
+    description: string;
+    has_rows: boolean;
+    rows_at: string | null;
+    identified_by: string;
+    summary_only: string | null;
+  };
+  rows: JoinDistributionRow[];
+  everything: JoinDistributionAggregate;
+  kept: JoinDistributionAggregate | null;
+  excluded: JoinDistributionAggregate | null;
+  exclusion: {
+    longitude_at_or_above: number | null;
+    storms_excluded: string[];
+    why_they_are_still_listed: string;
+    what_this_will_not_do: string;
+  };
+  how_to_read_a_distance: string;
+  claim_boundary: string | null;
+  verdict: string | null;
+  refusals: string[];
+  network_used: boolean;
+}
+
+/** T4E.32: a declaration and whether a maintainer has signed it. */
+export interface DeclarationRow {
+  declaration: string;
+  declaration_exists: boolean;
+  adoption_file: string;
+  adopted: boolean;
+  required_affirmation: string;
+  declaration_sha256?: string;
+  adopted_by?: string;
+  adopted_on?: string;
+  adopts_sha256?: string;
+  signature_still_reaches_the_declaration?: boolean;
+  drift?: string;
+  unreadable?: string;
+  schema?: string | null;
+  status?: string | null;
+  task?: string | null;
+  artefact?: string | null;
+}
+
+export interface DeclarationIndex {
+  declarations: DeclarationRow[];
+  required_affirmation: string;
+  what_signing_means: string;
+  what_this_surface_will_not_supply: string;
+  refusals: string[];
+  network_used: boolean;
+}
+
+export interface SignResult {
+  adopted: {
+    file: string; adopts: string; adopts_sha256: string;
+    adopted_by: string; adopted_on: string;
+  };
+  adoption: Record<string, unknown>;
+  network_used: boolean;
+}
+
+/** T4E.33: what convening a panel would involve, and what it did. */
+export interface PanelPlan {
+  roles: Array<{ role: string; expects: string[]; rubric: string }>;
+  calls_if_every_turn_is_taken: number;
+  calls_if_nothing_is_dissented_from: number;
+  why_that_differs: string;
+  default_model: string;
+  key_variables: string[];
+  key_present: boolean;
+  cost_is_the_caller_s: string;
+  one_model_in_every_seat_is_recorded_not_refused: string;
+  claim_boundary: string;
+  network_used: boolean;
+}
+
+export interface RoundRobinRun {
+  study_id: string;
+  bundle_sha256: string;
+  bundle_revision: number;
+  turns_taken: string[];
+  outcome: Record<string, unknown>;
+  review_file: string;
+  outcome_file: string;
+  usage: Array<Record<string, unknown>>;
+  total_tokens: number;
+  the_rung_was_copied_not_set: string;
+  claim_boundary: string;
+  network_used: boolean;
+}
+
+/** T4E.34: composing a declaration, and committing it alone before anything is measured. */
+export interface ComposeGateEntry { quantity: string; declared_value: string; tolerance?: string }
+export interface ComposePrediction {
+  name: string; statement: string; what_would_falsify_it: string;
+}
+
+export interface ComposeResult {
+  written: string;
+  path: string;
+  status: string;
+  composing_is_not_adopting: string;
+  not_committed?: string;
+  commit?: {
+    committed: boolean;
+    commit: string | null;
+    committed_at: string | null;
+    refusal: string | null;
+    files_in_commit: string[];
+    why_alone: string;
+  };
   network_used: boolean;
 }

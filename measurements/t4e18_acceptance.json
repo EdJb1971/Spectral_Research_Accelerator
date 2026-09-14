@@ -1,0 +1,345 @@
+{
+  "measurement": "t4e18_acceptance_deepest_per_storm",
+  "record": "data/cds_downloads/t4e18_vorticity (48 shards, 5844 frames, lat -58..-18)",
+  "per_storm": [
+    {
+      "storm": "FEHI",
+      "time": "2018-01-31 12:00:00",
+      "lat": -36.8,
+      "nature": "ET",
+      "radius_km": 8.903726199952057,
+      "features": 140,
+      "nearest_km": 69.74156874419648,
+      "inside_radius": 0
+    },
+    {
+      "storm": "GITA",
+      "time": "2018-02-20 00:00:00",
+      "lat": -38.6,
+      "nature": "ET",
+      "radius_km": 89.38408333273084,
+      "features": 100,
+      "nearest_km": 113.71654544375832,
+      "inside_radius": 0
+    },
+    {
+      "storm": "HOLA",
+      "time": "2018-03-12 00:00:00",
+      "lat": -31.5,
+      "nature": "SS",
+      "radius_km": 21.990430704825517,
+      "features": 124,
+      "nearest_km": 252.29446800478541,
+      "inside_radius": 0
+    },
+    {
+      "storm": "LINDA",
+      "time": "2018-03-15 00:00:00",
+      "lat": -23.8,
+      "nature": "TS",
+      "radius_km": 0.0,
+      "features": 114,
+      "nearest_km": 74.91176731935917,
+      "inside_radius": 0
+    },
+    {
+      "storm": "IRIS",
+      "time": "2018-03-28 06:00:00",
+      "lat": -22.7,
+      "nature": "TS",
+      "radius_km": 15.131080193454286,
+      "features": 97,
+      "nearest_km": 152.6889992476016,
+      "inside_radius": 0
+    },
+    {
+      "storm": "JOSIE",
+      "time": "2018-04-03 00:00:00",
+      "lat": -21.5,
+      "nature": "TS",
+      "radius_km": 145.23376827050723,
+      "features": 123,
+      "nearest_km": 189.64774835400485,
+      "inside_radius": 0
+    },
+    {
+      "storm": "OWEN",
+      "time": "2018-12-17 00:00:00",
+      "lat": -20.8,
+      "nature": "MX",
+      "radius_km": 11.119492664455889,
+      "features": 153,
+      "nearest_km": 99.97785176638213,
+      "inside_radius": 0
+    },
+    {
+      "storm": "PENNY",
+      "time": "2019-01-08 18:00:00",
+      "lat": -20.0,
+      "nature": "TS",
+      "radius_km": 11.119492664455889,
+      "features": 114,
+      "nearest_km": 51.19801875171209,
+      "inside_radius": 0
+    },
+    {
+      "storm": "OMA",
+      "time": "2019-02-23 00:00:00",
+      "lat": -28.2,
+      "nature": "MX",
+      "radius_km": 14.824505797651028,
+      "features": 130,
+      "nearest_km": 162.2379765829923,
+      "inside_radius": 0
+    },
+    {
+      "storm": "SARAI",
+      "time": "2019-12-29 06:00:00",
+      "lat": -20.3,
+      "nature": "TS",
+      "radius_km": 24.565694643341786,
+      "features": 98,
+      "nearest_km": 2055.9115466999688,
+      "inside_radius": 0
+    },
+    {
+      "storm": "UESI",
+      "time": "2020-02-15 00:00:00",
+      "lat": -37.5,
+      "nature": "SS",
+      "radius_km": 103.47459429659405,
+      "features": 117,
+      "nearest_km": 60.811392357624555,
+      "inside_radius": 2
+    },
+    {
+      "storm": "GRETEL",
+      "time": "2020-03-16 18:00:00",
+      "lat": -31.2,
+      "nature": "SS",
+      "radius_km": 106.8519982461921,
+      "features": 87,
+      "nearest_km": 127.09969605529943,
+      "inside_radius": 0
+    },
+    {
+      "storm": "ANA",
+      "time": "2021-02-01 06:00:00",
+      "lat": -22.3,
+      "nature": "TS",
+      "radius_km": 34.91209656007172,
+      "features": 128,
+      "nearest_km": 1581.2039642426605,
+      "inside_radius": 0
+    },
+    {
+      "storm": "LUCAS",
+      "time": "2021-02-03 12:00:00",
+      "lat": -22.7,
+      "nature": "MX",
+      "radius_km": 61.54889122773754,
+      "features": 148,
+      "nearest_km": 29.927728013775287,
+      "inside_radius": 3
+    },
+    {
+      "storm": "NIRAN",
+      "time": "2021-03-07 06:00:00",
+      "lat": -28.4,
+      "nature": "SS",
+      "radius_km": 112.30722832900854,
+      "features": 73,
+      "nearest_km": 1241.0443219837443,
+      "inside_radius": 0
+    },
+    {
+      "storm": "UNNAMED",
+      "time": "2021-04-12 06:00:00",
+      "lat": -30.1,
+      "nature": "ET",
+      "radius_km": 22.23898532891107,
+      "features": 130,
+      "nearest_km": 159.44686734959345,
+      "inside_radius": 0
+    },
+    {
+      "storm": "RUBY",
+      "time": "2021-12-15 18:00:00",
+      "lat": -30.7,
+      "nature": "SS",
+      "radius_km": 11.119492664455182,
+      "features": 105,
+      "nearest_km": 106.99854491228876,
+      "inside_radius": 0
+    },
+    {
+      "storm": "SETH",
+      "time": "2021-12-31 18:00:00",
+      "lat": -21.0,
+      "nature": "TS",
+      "radius_km": 10.380940534899715,
+      "features": 135,
+      "nearest_km": 111.72053018976614,
+      "inside_radius": 0
+    }
+  ],
+  "nearest_km": {
+    "min": 29.927728013775287,
+    "median": 127.09969605529943,
+    "max": 2055.9115466999688
+  },
+  "condition_1_at_least_one_inside_radius": {
+    "met": 2,
+    "of": 18,
+    "needed": 9
+  },
+  "condition_2_three_inside_radius": {
+    "met": 1,
+    "of": 18,
+    "needed": 9
+  },
+  "condition_3_features_per_frame": {
+    "min": 73,
+    "median": 123,
+    "max": 153
+  },
+  "verdict": "FAILED. Conditions 1 and 2 are not met on either extraction path -- 3 of 18 on the raw field, 2 of 18 through the SWT planes, against a declared bar of 9. See CORRECTION_2026_09_10: the first diagnosis in this record was wrong and the real causes are the dateline edge and a one-to-two-cell positional offset.",
+  "conditions_as_declared_before_the_data_existed": {
+    "condition_1": "at least half the storms with the nearest feature inside the catalogue radius -- MET BY 2 OF 18, needed 9",
+    "condition_2": "at least half with three features inside the radius -- MET BY 1 OF 18, needed 9",
+    "condition_3": "features per frame usable -- MET, 73 to 153, median 123",
+    "condition_4": "refusals by name -- MET"
+  },
+  "what_is_established_and_is_not_in_doubt": {
+    "the_variable_carries_the_signal": "Measured directly on the field, before any extraction: GITA sits at the 0.02nd percentile of its frame and the frame's single most cyclonic cell is ONE grid cell from the catalogue position; HOLA at the 0.16th, LINDA 2.32nd, IRIS 1.20th. The declared sign convention is correct.",
+    "the_crop_is_no_longer_the_problem": "The first probe sampled each storm's FIRST in-box observation, which is always where the storm entered the box and therefore always at the boundary the extractor refuses features at. That was a sampling artefact and was corrected. Re-sampling each storm's DEEPEST interior observation, at latitudes from -20.0 to -38.6, the join still fails: median nearest feature 127.1 km.",
+    "the_representation_is_not_the_problem_either": "Extraction on the RAW negated field yields 3 to 7 features per frame against 73 to 153 through the SWT planes, and is further from the storm in three of four cases. The wavelet decomposition is the only reason features are found at all."
+  },
+  "what_this_points_at": {
+    "the_extractor_s_calibration": "`local_maximum_extractor` admits a maximum only if it clears a threshold calibrated from the frame maxima of PHASE-RANDOMISED surrogates. Phase randomisation preserves the power spectrum, and for smooth geophysical fields the surrogates routinely produce frame maxima as large as the observation's. On 850 hPa temperature the threshold came out at 306.74 K against a field maximum of 302.5 K, so nothing could clear it at all. On vorticity, GITA -- the most cyclonic cell in its frame by a wide margin -- yields four raw features, none within 2,900 km.",
+    "the_extractor_s_declared_assumption": "Its own docstring says it assumes an isotropic peak on a flat baseline and is 'false for a front, false for a filament and false for anything elongated', and that the honest response is a second registered extractor rather than a special case inside this one.",
+    "the_finding": "The identity path's front end does not detect the phenomenon the signed catalogue labels, in a field where that phenomenon is unambiguous and dominant. That is a property of the instrument, not of the atmosphere, the catalogue, the crop or the variable."
+  },
+  "what_this_does_NOT_establish": [
+    "Not that relative vorticity is the wrong variable. The signal is measurably present and correctly signed; nothing extracted it.",
+    "Not that the acquisition was wasted. It is what made the diagnosis possible, and the record stands at 48 shards and 5,844 frames matching the expected calendar exactly.",
+    "Not that the catalogue or the signature is at fault. Neither was involved in the failure.",
+    "Not that a second extractor would succeed. That is untested and would be its own declared work.",
+    "Nothing about kind_recurrence itself, which remains unevaluable -- now for a reason one layer further in than it was this morning."
+  ],
+  "what_would_be_needed_next": "A registered extractor whose calibration suits a smooth field with a dominant compact extremum, or a calibration for the existing one whose null is not phase randomisation. Both are declared work with their own acceptance, and neither is authorised by this measurement.",
+  "claim_boundary": "An acceptance measurement settles what an instrument does, not what the atmosphere does. No frame of the 2022-2023 forecast-test period was acquired or opened.",
+  "CORRECTION_2026_09_10": {
+    "what_was_wrong": "This record first stated that the extractor does not find the cyclone, and named the phase-randomised frame-maximum calibration as the diagnosis. BOTH CLAIMS ARE WRONG and are corrected here rather than edited away.",
+    "how_the_error_was_made": "The temperature case was measured -- threshold 306.74 K against a field maximum of 302.5 K, where nothing could clear -- and generalised to vorticity without measuring it. The generalisation was never checked.",
+    "the_calibration_actually_clears_comfortably": "On the GITA frame the observed maximum is 1.5175e-3 against phase-randomised surrogate maxima of 1.76e-4 to 2.55e-4. The cyclone clears by a factor of six. Measured per storm at the catalogue cell plus or minus three cells: 11 of 18 are ACCEPTED -- above threshold, a local maximum, localised, and not off-frame.",
+    "a_second_thing_that_was_missed": "Of the five registered surrogate methods, aaft, iaaft, circular_shift and block_bootstrap all preserve the marginal distribution, so the surrogate frame maximum EQUALS the observed maximum and the test has no power whatever. Only phase_randomise can reject at all. That is a property of a frame-maximum statistic and is worth knowing before any of them is proposed as an alternative.",
+    "what_the_measurement_actually_shows": {
+      "raw_field_extraction": {
+        "nearest_km_min": 16.6,
+        "nearest_km_median": 52.1,
+        "inside_catalogue_radius": "3 of 18",
+        "features_per_frame": "0 to 13, median 7"
+      },
+      "swt_plane_extraction": {
+        "nearest_km_median": 127.1,
+        "inside_catalogue_radius": "2 of 18",
+        "features_per_frame": "73 to 153, median 123"
+      },
+      "reading": "Raw-field extraction is markedly BETTER for this purpose than the SWT planes -- median 52.1 km against 127.1 -- which is the reverse of what the earlier four-storm comparison suggested. Acceptance still fails either way."
+    },
+    "the_two_real_failure_modes": {
+      "the_dateline_edge": "Four storms sit at longitude 179.0 to 179.8 and are refused by the R13 off-frame rule, because their own window at two sigma overruns the crop's eastern boundary at 180.0. Their nearest features are 1207, 2028, 2465 and 3685 km away -- that is, nothing near them at all. The crop stops at the dateline because `CDSRegionalRequest` refuses dateline-crossing requests by design, and Fiji, Tonga and Samoa sit exactly there.",
+      "a_systematic_positional_offset": "For every storm not at the dateline the nearest feature is 16.6 to 99.3 km away, median about 35, against a catalogue radius whose median is 15.3. That is one to two grid cells: a factor of two to three, not the order of magnitude the first reading claimed. Candidate sources, none yet measured: the windowed-centroid sub-cell estimator biasing toward the broader side of an asymmetric vorticity field, the catalogue's own positional uncertainty, and the fact that an 850 hPa vorticity maximum need not sit exactly at the surface centre an agency reports."
+    },
+    "what_this_changes_about_the_verdict": "The acceptance still FAILS -- 3 of 18 inside the radius on raw extraction against a declared bar of 9 -- so the conclusion is unchanged. What changes is the diagnosis, and the diagnosis is what any next step would be built on. Building a replacement calibration on the wrong cause would have been expensive and would have failed for a reason nobody had measured.",
+    "what_is_still_true_from_the_original_record": "The variable carries the signal. The crop's latitude band is not the cause. The acquisition is sound at 48 shards and 5,844 frames. Those were measured rather than inferred and they stand."
+  },
+  "CORRECTION_2026_09_11_FROM_THE_T4E28_RERUN": {
+    "what_is_confirmed": "Every aggregate in CORRECTION_2026_09_10 is REPRODUCED from this repository against a gate declared before the run -- raw field min 16.6, median 52.1, max 3685.3, 3 of 18, features 0 to 13 median 7; SWT planes min 29.9, median 127.1, max 2055.9, 2 of 18, features 73 to 153 median 123. All 18 recorded SWT rows regenerate exactly, which CONFIRMS that the extraction parameters recovered from a session scratchpad are the ones that produced this record.",
+    "what_is_WRONG_in_the_previous_correction": {
+      "the_claim": "'For every storm not at the dateline the nearest feature is 16.6 to 99.3 km, median about 35' -- stated in a_systematic_positional_offset and repeated as 'one to two grid cells, a factor of two to three, not an order of magnitude'.",
+      "why_it_is_wrong": "The median is right. The RANGE is not. Two storms away from the dateline are far outside it: SETH at longitude 155.9 with its nearest feature 315.1 km away, and HOLA at 175.8 at 247.7 km. Both are an order of magnitude above the catalogue radius median of 22.1 km, which is precisely what the previous correction said did not happen away from the dateline. A third storm, GRETEL at 178.1, yields NO feature at all on the raw path and so appears in neither half of that sentence.",
+      "how_the_error_was_made": "The upper bound was quoted from the storms that fit the story. The record held only a minimum per storm, so nothing in the repository could contradict it -- which is the same gap that made T4E.27 refuse condition 2, appearing here as a false statement rather than an absent one.",
+      "the_other_half_of_the_same_sentence": "RUBY sits at longitude 179.0 -- inside the band the correction names as refused by the R13 off-frame rule -- and its nearest feature is 67.6 km away, in line with the storms away from the dateline. Dateline longitude is therefore NOT sufficient for the failure, and the four storms that fail badly there were treated as though it were.",
+      "the_corrected_statement": "Away from the dateline the nearest feature is 16.6 to 315.1 km with a median of 35.9 over the 13 storms that yield one, against a catalogue radius median of 22.1 km. The median offset remains one to two grid cells and continues to agree with T4E.19's 33.8 km. The distribution has a tail that the previous correction excluded without saying so.",
+      "what_this_does_and_does_not_change": "The acceptance verdict is untouched: FAILED, 3 of 18 on the raw path against a bar of 9, and now also 0 of 18 on condition 2. The DIAGNOSIS changes. 'Two real failure modes' was too few -- there is a third population of storms, away from any boundary, whose nearest feature is hundreds of kilometres off or absent entirely, and it was hidden by reporting a range that excluded it."
+    },
+    "condition_2_on_the_raw_path_measured_for_the_first_time": {
+      "met": 0,
+      "of": 18,
+      "needed": 9,
+      "note": "Never computed on the raw path before: the original script printed a per-storm column and totalled only the '>= 1' case. No prediction was offered for it in the T4E.28 declaration, because there was no prior figure to reproduce and declaring a guess as a prediction is the failure TG19.5 exists to catch.",
+      "what_it_shows": "The raw path is better on distance and WORSE here -- 0 of 18 against the SWT path's 1 of 18. With 0 to 13 features per frame against 73 to 153, having three of them inside a 22 km radius is a far harder thing to do. 'Markedly better' was a statement about the nearest feature and does not carry to the count inside the radius."
+    },
+    "non_dateline_nearest_km_raw_path_every_storm": [
+      {
+        "storm": "UESI",
+        "lon": 159.7,
+        "nearest_km": 16.6
+      },
+      {
+        "storm": "GITA",
+        "lon": 169.6,
+        "nearest_km": 28.4
+      },
+      {
+        "storm": "FEHI",
+        "lon": 165.9,
+        "nearest_km": 30.0
+      },
+      {
+        "storm": "LUCAS",
+        "lon": 166.6,
+        "nearest_km": 33.4
+      },
+      {
+        "storm": "PENNY",
+        "lon": 149.0,
+        "nearest_km": 34.2
+      },
+      {
+        "storm": "IRIS",
+        "lon": 159.2,
+        "nearest_km": 34.3
+      },
+      {
+        "storm": "OWEN",
+        "lon": 150.4,
+        "nearest_km": 35.9
+      },
+      {
+        "storm": "LINDA",
+        "lon": 156.3,
+        "nearest_km": 40.9
+      },
+      {
+        "storm": "UNNAMED",
+        "lon": 174.5,
+        "nearest_km": 52.1
+      },
+      {
+        "storm": "RUBY",
+        "lon": 179.0,
+        "nearest_km": 67.6
+      },
+      {
+        "storm": "OMA",
+        "lon": 161.3,
+        "nearest_km": 99.3
+      },
+      {
+        "storm": "HOLA",
+        "lon": 175.8,
+        "nearest_km": 247.7
+      },
+      {
+        "storm": "SETH",
+        "lon": 155.9,
+        "nearest_km": 315.1
+      }
+    ],
+    "source": "measurements/t4e28_join_rerun.json",
+    "recorded_on": "2026-09-11"
+  }
+}

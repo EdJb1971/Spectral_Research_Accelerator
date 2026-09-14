@@ -1,0 +1,236 @@
+{
+  "addresses": "the extremes test for T4E.44's Shape B, before any candidate is declared",
+  "claim_boundary": "This is an extremes test of a proposed shape, not a criterion and not evidence for C6. It refutes one null for one bar; it establishes nothing about the atmosphere, the signature, or whether any size-scaled criterion can work.",
+  "cost_of_this_derivation": "arithmetic over counts already published. No partition, signature or distance was touched, no reserve opened, and no candidate declared or adopted.",
+  "expected_cliques_under_independence": {
+    "6": [
+      {
+        "expected_under_independence": 121.0,
+        "one_per_scene_sets": 6000,
+        "pairs_required": 1,
+        "size": 2
+      },
+      {
+        "expected_under_independence": 1.3122674074074074,
+        "one_per_scene_sets": 160000,
+        "pairs_required": 3,
+        "size": 3
+      },
+      {
+        "expected_under_independence": 0.00016144178892597732,
+        "one_per_scene_sets": 2400000,
+        "pairs_required": 6,
+        "size": 4
+      },
+      {
+        "expected_under_independence": 2.136202544494487e-10,
+        "one_per_scene_sets": 19200000,
+        "pairs_required": 10,
+        "size": 5
+      },
+      {
+        "expected_under_independence": 2.3751539964973463e-18,
+        "one_per_scene_sets": 64000000,
+        "pairs_required": 15,
+        "size": 6
+      }
+    ],
+    "9": [
+      {
+        "expected_under_independence": 568.0,
+        "one_per_scene_sets": 105840,
+        "pairs_required": 1,
+        "size": 2
+      },
+      {
+        "expected_under_independence": 1.8321598739436988,
+        "one_per_scene_sets": 11854080,
+        "pairs_required": 3,
+        "size": 3
+      },
+      {
+        "expected_under_independence": 1.784018815736283e-05,
+        "one_per_scene_sets": 746807040,
+        "pairs_required": 6,
+        "size": 4
+      },
+      {
+        "expected_under_independence": 4.97201838669829e-13,
+        "one_per_scene_sets": 25092716544,
+        "pairs_required": 10,
+        "size": 5
+      },
+      {
+        "expected_under_independence": 3.098512727076524e-23,
+        "one_per_scene_sets": 351298031616,
+        "pairs_required": 15,
+        "size": 6
+      }
+    ],
+    "12": [
+      {
+        "expected_under_independence": 1445.9999999999998,
+        "one_per_scene_sets": 726000,
+        "pairs_required": 1,
+        "size": 2
+      },
+      {
+        "expected_under_independence": 1.6826471525169042,
+        "one_per_scene_sets": 212960000,
+        "pairs_required": 3,
+        "size": 3
+      },
+      {
+        "expected_under_independence": 2.193673636265428e-06,
+        "one_per_scene_sets": 35138400000,
+        "pairs_required": 6,
+        "size": 4
+      },
+      {
+        "expected_under_independence": 3.0379552835353983e-15,
+        "one_per_scene_sets": 3092179200000,
+        "pairs_required": 10,
+        "size": 5
+      },
+      {
+        "expected_under_independence": 3.491492944824211e-27,
+        "one_per_scene_sets": 113379904000000,
+        "pairs_required": 15,
+        "size": 6
+      }
+    ]
+  },
+  "large_end": {
+    "direction": "ANTI_CONSERVATIVE",
+    "independence_is_refuted": true,
+    "mechanism": "a nearest-neighbour matching is transitive by construction, so cliques are far more common than independent edges of the same density predict",
+    "reading": "The independence null is not a conservative approximation here. It understates coincidental cliques by ten to fifteen orders of magnitude at m = 5, in the direction that admits a coincidence as a recurrence.",
+    "rows": [
+      {
+        "blocks_measured": 4,
+        "blocks_with_a_coincidental_five_clique": 0,
+        "independence_understates_by_at_least": null,
+        "predicted_five_cliques_under_independence": 2.090376932732592e-09,
+        "richness": 6
+      },
+      {
+        "blocks_measured": 4,
+        "blocks_with_a_coincidental_five_clique": 2,
+        "independence_understates_by_at_least": 748793342789.8312,
+        "predicted_five_cliques_under_independence": 6.677409792895799e-13,
+        "richness": 9
+      },
+      {
+        "blocks_measured": 4,
+        "blocks_with_a_coincidental_five_clique": 4,
+        "independence_understates_by_at_least": 127388525072653.77,
+        "predicted_five_cliques_under_independence": 7.850000613710441e-15,
+        "richness": 12
+      }
+    ],
+    "source_of_the_observation": "candidate 3's recorded false admission at k = S - 1 = 5, which is a measurement and not a new claim"
+  },
+  "network_used": false,
+  "receipt_sha256": "2cdeb88c69b76e61c41f23d40182a1e8e3af43bceff3d6d85b7fb781ea16f1a6",
+  "scenes": 6,
+  "schema": "t4e45-clique-rarity-derivation/v1",
+  "small_end": {
+    "every_pair_expected_by_chance": true,
+    "reading": "At m = 2 the expectation equals the observed edge count, so a pair is expected by the hundreds and cannot be evidence under any bar. Candidate 4's defect -- a group of two admitted on the same terms as a group of six -- is excluded by the arithmetic rather than by a special case.",
+    "rows": [
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 20,
+        "edges": 121,
+        "expected_pairs_by_chance": 121.0,
+        "richness": 6
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 20,
+        "edges": 152,
+        "expected_pairs_by_chance": 152.0,
+        "richness": 6
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 20,
+        "edges": 136,
+        "expected_pairs_by_chance": 136.0,
+        "richness": 6
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 84,
+        "edges": 568,
+        "expected_pairs_by_chance": 568.0,
+        "richness": 9
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 84,
+        "edges": 485,
+        "expected_pairs_by_chance": 485.00000000000006,
+        "richness": 9
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 84,
+        "edges": 585,
+        "expected_pairs_by_chance": 585.0,
+        "richness": 9
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 84,
+        "edges": 566,
+        "expected_pairs_by_chance": 566.0,
+        "richness": 9
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 220,
+        "edges": 1446,
+        "expected_pairs_by_chance": 1445.9999999999998,
+        "richness": 12
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 220,
+        "edges": 1440,
+        "expected_pairs_by_chance": 1440.0,
+        "richness": 12
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 220,
+        "edges": 1590,
+        "expected_pairs_by_chance": 1590.0,
+        "richness": 12
+      },
+      {
+        "a_pair_is_evidence": false,
+        "configurations_per_scene": 220,
+        "edges": 1488,
+        "expected_pairs_by_chance": 1488.0,
+        "richness": 12
+      }
+    ]
+  },
+  "status": "DERIVATION_ONLY_NO_CANDIDATE_DECLARED",
+  "task": "T4E.45",
+  "what_does_not_survive": [
+    "The independence null that makes the expectation computable. Candidate 3 measured coincidental five-cliques in half the development blocks; independence predicts between 1e-10 and 1e-15 of them. The assumption fails anti-conservatively.",
+    "The recommendation that prompted this derivation, in its simple form. Shape B was recommended because its extremes could be derived before adoption. They were, and they refuted it."
+  ],
+  "what_survives": [
+    "The shape of the bar. The count of one-per-scene sets grows as c**m while the probability of a clique falls as p**(m(m-1)/2), so the expectation collapses super-exponentially with size. That is size scaling with no free parameter.",
+    "The small end. A pair is expected by the hundreds, so a clique-rarity bar refuses groups of two by arithmetic rather than by the special case candidate 4 needed."
+  ],
+  "what_the_open_question_became": {
+    "is_now": "whether the graph's transitivity -- the quantity that makes cliques common -- can be estimated from a partition that contains the motif whose clique is under test, without the estimate being set by the signal",
+    "note": "That contamination question is K1 in another form, which is worth saying plainly: the two shapes T4E.44 left may share a single underlying obstacle.",
+    "was": "whether the matching graph has a chance structure estimable without a surrogate",
+    "why_that_is_narrower": "it names one measurable quantity and one contamination question, rather than an open modelling problem"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "t4e12-confirmatory-amendment/v1",
+  "amends": "data/identity_calibration/t4e12-consistency-declaration.json",
+  "amends_sha256": "639485af9ad2574c8a6ab0d3f6c0e14dacb32c0cf5ae8c6b2cc400fb262efdf0",
+  "amends_adoption": "data/identity_calibration/t4e12-consistency-adoption.json",
+  "amended_by": "Edward Jonathan Bentley, maintainer",
+  "amended_on": "2026-09-09",
+  "what_this_amendment_authorises": "Opening TWO of the four reserved confirmatory partitions -- seeds 700-705 and 710-715 -- for a confirmatory evaluation of T4E.12 candidate 2 at k = S. Nothing else.",
+  "what_stays_reserved_and_is_enforced_in_code": "Seeds 720-725 and 730-735 remain reserved and have never been generated. STILL_RESERVED_CONFIRMATORY_SEEDS in src/benchmarks/identity_certification.py refuses them EVEN WHEN confirmatory=True, so this split is enforced by the code and not by intention. That distinction is the programme's own standard: intention has already been shown insufficient elsewhere here, which is why the forecast period is refused in code too.",
+  "why_the_split_rather_than_all_four": "The maintainer had declined to spend any of these blocks on candidate 2, giving the reason that k was influenced by the feasibility probe on the development blocks, so a confirmatory run would not be testing a structural choice made blind. That reasoning is unchanged and still holds. The split takes the part of the value that is available anyway -- whether candidate 2's development result reproduces on scenes it has never seen -- while preserving two genuinely clean partitions for a criterion whose structural choices ARE fixed blind, which is what the reserved evidence was for.",
+  "what_a_confirmatory_result_here_can_and_cannot_be": "It CAN establish that candidate 2's development result reproduces on unseen scenes. It CANNOT establish that a blind structural choice would have produced it: k = S was chosen after seeing that coincidental groups top out at 5 on the development blocks, and no amount of fresh data changes what informed that choice. The result must be reported with that qualification attached, and the maintainer's standing framing continues to apply -- candidate 2 is a diagnostic of whether the signature can sustain coherent identity, not a defensible real-world recurrence rule.",
+  "what_was_declared_and_what_was_not": "The declaration names four confirmatory PLANTED partitions and no confirmatory null. So this run measures false split and false admission on unseen planted scenes, which is genuine unseen-data evidence for both error rates, and the null evidence -- where nothing recurs at all -- REMAINS DEVELOPMENT ONLY. Building an undeclared confirmatory null after seeing the development results is not authorised by this amendment and was not done.",
+  "scope": "T4E.12 candidate 2 only, at k = S, at the three declared richness levels. This amendment opens nothing for any other candidate, task or domain, and a later candidate may not reuse 700-715: once built they are inspected data, and renaming them does not change that.",
+  "governing": [
+    "Already inspected data do not become untouched by renaming them. After this run, 700-715 are spent permanently.",
+    "R20 continues to govern: candidate 2 is evaluated alone.",
+    "Code does not sign an amendment for a person; this file records the maintainer's decision and the maintainer made it."
+  ],
+  "outcome": {
+    "status": "CONFIRMATORY EVALUATION PASSED ON UNSEEN PARTITIONS",
+    "measured_on": "2026-09-09",
+    "partitions_spent": [
+      "700-705",
+      "710-715"
+    ],
+    "partitions_still_reserved": [
+      "720-725",
+      "730-735"
+    ],
+    "false_split_every_partition_every_richness": 0.0,
+    "false_admission_every_partition_every_richness": 0.0,
+    "admitted_per_partition": 15,
+    "pairs_proposed_by_candidate_C_range": [
+      122,
+      1518
+    ],
+    "configurations_refused_as_incomparable": 2,
+    "summary": "Both partitions at all three richness levels admitted exactly 15 pairs -- C(6,2), the motif's complete clique -- and nothing else, out of 122 to 1518 pairs candidate C proposed. False split 0.0000 and false admission 0.0000 throughout. The matched fraction is 1/m at every level, including 1/219 in the partition where one configuration was refused as incomparable. The development result reproduces exactly on scenes the criterion had never seen.",
+    "what_this_establishes": "That candidate 2's development result was not an artefact of the four blocks it was developed on. Both error rates hold at zero on partitions built for the first time for this run.",
+    "what_this_still_does_not_establish": [
+      "That a blind structural choice would have produced it. k = S was chosen after a feasibility probe showed coincidental groups topping out at 5 on the development blocks. Fresh scenes test whether the rule generalises; they cannot retrospectively make the choice of k blind, and no quantity of them could.",
+      "Anything about rejection where nothing recurs at all. No confirmatory null was declared, so the null evidence -- candidate C proposing 116, 595 and 1486 pairs and this criterion admitting none -- REMAINS DEVELOPMENT ONLY.",
+      "Anything about a record with partial recurrence. k = S rejects a configuration absent from a single scene outright, and a real pattern need not appear in every window.",
+      "Anything about recurrence ACROSS partitions, which is what the mining, sequence and precursor machinery downstream requires.",
+      "No mining radius, no discharge of T4E.8's acquired-record acceptance, no closure of D96, D97, D98, D99 or D100, and nothing about kind_recurrence, which admits only external_reference evidence and still has no catalogue."
+    ],
+    "the_maintainer_s_framing_still_governs_the_write_up": "'Candidate 2 looks like a strong diagnostic of whether the signature can sustain coherent identity. It is not yet a defensible real-world recurrence rule.' That was fixed before any of these numbers existed and is unchanged by them. What has been strengthened is the diagnostic, on unseen data; what has not changed is that it is a diagnostic.",
+    "what_the_remaining_reserved_partitions_are_for": "720-725 and 730-735 have never been generated and are refused in code even under confirmatory=True. They are kept for a criterion whose key structural choices are fixed without seeing them -- most obviously a criterion of this shape with k below S, declared before anyone probes how coincidental groups behave at that k. Spending them requires a further amendment and the maintainer's decision."
+  }
+}

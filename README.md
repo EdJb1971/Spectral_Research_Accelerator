@@ -31,13 +31,59 @@ as one. Four documents carry the tracked state, each with a different job:
 contradicts the source or the other documents. That guard exists because these files had gone
 stale before while nothing failed; it is the reason the status table cannot quietly drift.
 
+The backend loads the repository-root `.env.local` itself. Direct Uvicorn, VS Code tasks and the
+PowerShell launcher therefore share the same machine-local configuration; an environment variable
+already supplied by the process takes precedence. Set `SPECTRALEARTH_LOAD_LOCAL_ENV=0` when local
+file loading must be disabled explicitly.
+
 **Two roadmaps, one repository.** `roadmap.md` is the atmospheric line, frozen for `master` at
 `freeze-t4c.5h-preregistration` and still advancing on `ed-dev`. `roadmap_cross_domain.md` is a
 fork of that line, not a successor, and its results may **not** be cited as SpectralEarth
 atmospheric evidence. Both are live on `ed-dev` and work alternates between them; neither
 supersedes the other.
 
-**Current frontier (`ed-dev`).**
+**Current frontier (`ed-dev`), as of 2026-09-12.**
+
+This paragraph is orientation only. `architecture.md` section 0 is the status of record, and
+`VERIFICATION.md` carries the captured output behind every figure below.
+
+* **The atmospheric identity line reached T4E.34.** T4E.18 acquired a relative-vorticity record
+  and its acceptance **FAILED**: the extracted features do not land on catalogue cyclone centres,
+  3 of 18 inside the catalogue radius against a declared bar of 9. That verdict has survived a
+  restatement of the bar (T4E.27), a re-run from a gate committed before it (T4E.28), and two
+  corrections to its own diagnosis. **No mining radius is approved and no claim about the
+  atmosphere is made anywhere.**
+
+* **T4E.28 re-ran the join against a gate committed in a separate commit beforehand.** Both
+  extraction paths reproduce every figure the record asserts, and the extraction parameters --
+  which existed only in a session scratchpad under `%TEMP%` -- are confirmed against all 18
+  recorded rows. The re-run also **falsified a claim in T4E.18's own correction**: away from the
+  dateline the nearest feature reaches 315.1 km, not the 99.3 km published, and one storm at a
+  dateline longitude is unaffected. Corrections are appended to the records, never edited away.
+
+* **T4E.29 to T4E.34 moved the experiment onto the interface.** Every distance in the join is on
+  screen with exclusions applied in the open; a measurement can be carried into an evidence
+  bundle only where git proves the declaration predates it (T4E.30); the adversarial round-robin
+  has a runner (T4E.31); and declarations can be composed, committed alone, and signed from the
+  surface (T4E.32-T4E.34). **The rule that code does not sign a scientific declaration for a
+  person is unchanged** -- signing requires a named person and an affirmation typed in full.
+
+* **What has NOT happened, stated here so it is not inferred.** **No valid review panel has
+  completed and no round-robin outcome exists.** Two paid attempts against `gemini-3.5-flash`
+  are preserved as partial records: one originated dissents at reassessment, and one reopened
+  four concessions. Only one evidence bundle exists. Six of sixteen studies **cannot** be carried into a bundle,
+  because their declaration and their measurement entered git in the same commit and nothing can
+  prove which came first -- that is recorded, not fixable retrospectively. Running a *measurement*
+  is still a terminal command, not a surface action.
+
+* Cross-domain line: **Phase G17 is IN PROGRESS, G18 is DONE, and G19 is SPECIFIED AND NOT
+  STARTED.** Note that five atmospheric engineering slices were named `TG19.1`-`TG19.5`, which
+  collides with the `TGxx.y` cross-domain convention; they are **not** phase G19. The collision is
+  recorded in `roadmap_cross_domain.md` section 0.
+
+The paragraphs below were written at T4E.8/TG17.11 and describe that frontier. They are kept
+because the defects they name (D96, D97) are still open, but they are **not** the current
+position.
 
 * Atmospheric line: **Phase 4E is DONE**. T4E.1-3 build, sign and approximately cluster
   constellations; T4E.4 now applies a configurable minimum support over distinct constellation
@@ -64,8 +110,90 @@ supersedes the other.
   anti-conservative null is provided and its cost measured: on one unchanged record the same
   lift of 5.25 is not distinguished from the shifting null at p = 0.11 and is called a
   precursor by the scattering null at p = 0.01. A design that could not have rejected
-  anything is refused before any counting happens. Nothing is called a cause (R7). **T4F.4
-  bidirectional queries are next.**
+  anything is refused before any counting happens. Nothing is called a cause (R7).
+* **T4F.4 is DONE, and it makes that table askable in both directions without making either
+  direction a second test.** Top-down (what finer configurations preceded this structure?) and
+  bottom-up (what coarser structure followed this configuration?) are one selection over the
+  rows T4F.3 already corrected: the direction fixes which role the queried pattern plays and
+  which side of a measured scale ordering its counterpart must sit on. Nothing is recomputed,
+  the declared family is published beside every answer, and the tempting shortcut -- re-running
+  the inference for the one pattern being asked about -- is priced rather than warned about:
+  the same rule's q-value falls from 0.0417 to 0.0050 when the family is narrowed after the
+  fact. Coarse and fine are read off the catalogue's own member scales as an interval order, so
+  patterns whose scale ranges overlap or merely touch are not orderable and are withheld and
+  counted rather than sorted, and under the scale-invariant mode the ordering is refused
+  outright because that mode makes every pattern's scale statistic exactly 1.0. Every ranking
+  key is available with its rank on every entry: ranked by how often it preceded the target the
+  leading answer is a pattern the null did not distinguish, and ranked by the corrected p-value
+  it is the planted precursor, so the choice of ranking decides the answer.
+* Phase 4 frontier: **T4F.5 is DONE, and it puts a rule back on the map without claiming the
+  map knows more than it does.** A pattern projects to a *footprint* -- the parent cells inside
+  the transform's own filter support, the same number R13 cuts the contaminated margin with --
+  and never to a pixel, because a detail coefficient peaks on a structure's flank rather than at
+  its centre. On the planted vortex that flank sits 1.08 structure widths out at level 4 and 1.26
+  at level 5, and **the peak cell is not the planted cell in a single one of twenty-four
+  frames**; the footprint recovers it, and only while the level that found the structure can
+  still reach back to it, so level 4 holds the planted cell to frame 9 and loses it in all
+  fifteen frames after while level 5 holds it throughout. Evidence should be read at the level
+  that resolves the thing. Two members' overlap is not a location either: one level's LH and HL
+  bands contain the planted cell in 11 of 11 occurrences, and one orientation's two levels
+  exclude it in 11 of 11 because both flanks point the same way. Each grid says only what it can
+  -- degrees, or metres named as a distance from the crop's own origin, or cells and nothing else
+  -- an undeclared level stays a number rather than becoming hectopascals, and a frame is dated
+  only where the record carries a calendar. The historical instances come from the same
+  per-anchor decision the support was counted with, and every total is reconciled against the
+  rule's published figures before anything is shown.
+* **T4F.6 is PARTIAL: R10's physical gate is built, it discriminates, and it has not been run.**
+  A mined pattern is measured off the footprints T4F.5 drew, turned into kilometres and hours
+  through the record's own metric and calendar, and labelled `recognised`, `unrecognised` or --
+  the third label, which is the one that keeps the other two honest -- `unassessable`, because
+  an entry needing a field the record does not carry has not been checked and found absent. All
+  three verdicts are reached on the same real patterns: PASS against a catalogue whose envelopes
+  fit, FAIL against one whose envelopes do not, with R10's standing presumption that the
+  pipeline is broken written into the receipt, and INVALID against a catalogue so wide that
+  nothing could have fallen outside it, which licenses nothing and is not a FAIL. The ranking
+  key decides the verdict -- with a top-N of one the same report passes ranked by corrected
+  p-value and fails ranked by support -- so it is hashed into a declaration along with the top-N, the catalogue's digest
+  and a required naming of the documented event and its source. A catalogue is a draft until a
+  maintainer signs it, and the gate refuses to adjudicate under a draft including the one this
+  repository ships, whose envelopes are a first reading rather than values quoted from any
+  paper. What bounds the whole exercise is a measurement of the record: on the acquired ERA5
+  crop a cell is 27.80 km north-south and between 13.90 and 26.12 km east-west, so sixteen cells
+  is anywhere from 222 to 445 km, and an envelope narrower than that cannot exclude anything.
+  **The acceptance has not been run** -- it needs a maintainer-frozen catalogue, a declared
+  documented cyclogenesis event, and a real mining pass over the 8,764-frame record that has
+  never been performed -- so **Phase 4G is still gated**, and T4F.5's second acceptance clause
+  waits with it.
+* **T4F.7 is DONE: a rule now has to say where it holds and where it does not.** R14's point is
+  that a pattern found in one place is a fact about that place until it is re-tested somewhere
+  else -- "we found a thing about the Alps" and "we found a thing about the atmosphere" are both
+  valuable and they are not the same claim. Five declared boxes of one record: the rule holds in
+  two held-out regions, does not hold in a third that carries both patterns in the wrong order,
+  and is **not assessable** in a fourth that carries nothing at all. That third label is the
+  point of the task: a region where the pattern never occurred did not fail the test, it never
+  took it, and reporting it as failure would turn missing data into evidence of locality. A
+  held-out region may supply occurrences but may not help define what a pattern is, and checking
+  that turned up something worth knowing -- the signature this platform compares configurations
+  with is invariant to rotation by construction, so it cannot tell a zonal structure from a
+  meridional one at all. How far apart the boxes are is published rather than assumed, and
+  physiography is something a maintainer declares with a source, not something a temperature
+  field can be asked. Exercised on a synthetic record only.
+* **T4F.8 is DONE: the platform now proposes experiments that could tell it it was wrong.** It
+  already proposed follow-ups, and both of them were optimisers -- propose the parameter range
+  that made the metric better, fix the category that won and re-run. Neither could produce a
+  result that would retract the finding that prompted it, which makes them useful and makes them
+  not tests. The new kind is refutable: a re-test on ground the finding was **not** made on,
+  carrying a prediction digested before the target record is read and a named condition that
+  would retract it -- and refused outright when that condition turns out to be one no possible
+  outcome could satisfy, which is what a zero base rate leaves you with. A rule that *failed* its
+  null gets a proposal too, because a tool that only follows up its successes has publication
+  bias built into it; that proposal carries no prediction, can confirm nothing, and is refused
+  when the study was already large enough to have found the effect -- asking for more data until
+  a negative goes away is chasing it. How many occurrences a design needs is computed from
+  quantities the record can be read for without ever counting the pair under test, and it has to
+  be enough to confirm *and* enough to retract. No proposal has been run: this produces designs.
+  **Phase 4G is next** on the code line; the next scientific step is still the T4F.6 gate run,
+  which needs a maintainer before it needs a machine.
 * Cross-domain line: **TG17.14 is DONE and `live_sources` reads `PASS`.** On 2026-09-04 the
   authorised bounded run reached ERA5 through CDS, Argo GDAC and MAST SPOC, each demonstrating
   real network use, while the bespoke order-book family demonstrated a content-addressed local
@@ -121,6 +249,12 @@ supersedes the other.
   here: calendar buys its p-value floor with replications and has no enumeration ceiling
   (999 against 293 required, and the declared plan 200 against 166), while scale/shape buys its
   floor with domains and cannot.
+* The corrected G17 real-record pool is visible in **Platform Status**: 104 qualified profiles,
+  eight named cycle-coverage refusals, a 59-record core, the exact 57-record recommended subset,
+  pending human-review requirements and archived lineage-bug evidence. A reviewer can write an
+  exchangeability decision and adopt it through separate UI actions. Public TESS discovery and
+  acquisition, plus immutable offline reconstruction/export, remain explicit CLI jobs; the UI
+  displays their results but does not launch those network or bulk-publication operations.
 * What TG18.2 has delivered, all of it presentation only: every figure carries a text and table
   equivalent of what it draws, a declared statement of whether two panels may share a colour
   scale, the domain a fitted claim was taken over with the uncertainty attached to it, and
@@ -128,11 +262,54 @@ supersedes the other.
   vector publication sheets that preserve the figure's reading contract. Under
   G18 none of this may recompute, summarize, promote or reinterpret a scientific value, so each
   addition transcribes what the analysis layer produced or states that it produced nothing.
-* Last measured full backend run: **3978 passed, 4 skipped, 1 xfailed**, exit 0 (2026-09-05, 0:52:09).
+* Last measured full backend run: **5038 passed, 1 xfailed, 4 skipped — and 7 FAILED** (2026-09-12, 1:10:33). Six are pre-existing and documented: the T4E.9 benchmark FAIL at split 0.4667 plus its API route, three owed browser-evidence recordings, and a `live_sources` gate left `NOT_RUN`. The seventh was a Windows `os.replace` permission failure while publishing a temporary Zarr directory; the exact test passed alone immediately afterwards in 38.05 s, so it is recorded as non-reproduced rather than hidden. The previous dated figure was 4917 passed and 8 failed (2026-09-11, 0:59:00).
 * Last measured browser suite: **136/136** in Chromium from a cleaned `.e2e-state` (2026-09-04).
   It is inventoried in `architecture.md` section 7.4a; it is the only check here that proves a
   page renders.
-* Open defects: **D84 and D85**; D18 partial. D43 is closed. D91, the scale/shape null
+* Open defects: **D84, D85, D96, D97, D98, D99 and D100**; D18 partial. D101 was fixed by T4E.9. D43 is closed. **`PLAN.md` orders
+  what remains.** **D97 is the one that gates everything**: the tolerance deciding what a
+  *pattern* is is calibrated from repeated measurements of one physical configuration, and a
+  real atmospheric record contains none -- the distance between two observations of one
+  tracked configuration grows monotonically with the gap between them, so what comes back is
+  physical evolution rather than a noise floor. Measured on three slices spanning the acquired
+  record, at the radius that splits 5% of same-configuration pairs, 60-69% of pairs from
+  different configurations are admitted. T4E.6 added the missing complementary rate and found
+  the published one to be identically zero at its own operating point; T4E.7 built a
+  calibration that needs no replicates at all and recovers a planted identity on synthetic data
+  without labels, and **on the acquired record it returns no radius**, which is why D97 stays
+  open. **D98 is part of why it returns none**: the only null available for the question -- a
+  phase-randomised surrogate put through the same pipeline -- produces a quarter of the
+  record's signatures, so it destroys the features and not merely their recurrence, and in the
+  close-pair tail the record's signature pairs are *further apart* than that null's.
+  T4E.8's replicate census then found that the record **does** hold replicates under the
+  strictest reading -- 6,838 labelled pairs -- and that they group only 73% of genuine repeats
+  against 27% of unrelated pairs admitted. A null cannot beat labels, so D98 was never the
+  binding constraint. **D99** is: a tracked feature changes wavelet band between adjacent
+  frames in 60.8% of same-configuration pairs, and scale-specific signing puts that into the
+  **D100** is a component weighted as a discriminator that scores a coin
+  flip. Excluding both, a radius of 0.0972 groups 90% of stationary repeats while admitting
+  4.5% of unrelated pairs -- the first identity radius on this record the programme can defend,
+  and it rests on 124 pairs.
+  **T4E.8 slice 3 makes the identity target a declared field the audit refuses to run
+  without**, and refuses `kind_recurrence` against record-derived proxy labels as circular,
+  because tracked keys come from the same pipeline whose identity is under test. Naming the
+  slice-2 design's target reproduced its figures bit-for-bit. No target is chosen and no radius
+  is approved; choosing one remains the maintainer's scientific decision.
+  **T4E.8 slice 2 adds an opt-in spatial-geometry identity mode.** Bands and strengths
+  stay carried while spatial separation remains comparable within a declared record/grid and
+  source. Its three-window real-data audit improves AUC but fails the declared two-sided
+  criterion; no mining radius is approved. See architecture.md section 3E.8 and PLAN.md for
+  the current decision point. The 60.8% census above counts all repeated-key pairs, not only
+  adjacent-frame pairs, and track keys are proxy labels rather than physical ground truth.
+  **D96 is downstream of it**: because most pairs fall inside the radius, the tolerance graph
+  is one connected component, which is what makes the clustering unusably slow. **D96 gates Phase 4G**: the
+  identity step that turns signed configurations into patterns is complete-linkage clustering
+  implemented directly, measured on real signatures from the acquired record at 5.5 s for 50
+  points, 40 s for 100 and 347 s for 200 -- an exponent of about 3 -- against a training
+  period that presents roughly 843,000 of them. It was never characterised, because every
+  test in the repository clusters a few dozen points. The mining pass the T4F.6 gate
+  adjudicates is therefore not merely unperformed; on this implementation it cannot be
+  performed. D91, the scale/shape null
   deranging list positions rather than pairings, is fixed in TG17.11's first slice. Fixing
   it established two facts about the declared families themselves: four domains compared
   all-against-all admit exactly one distinguishable reassignment, and the three that admit
@@ -175,7 +352,15 @@ The engine screens run tables for numerical and categorical associations and can
 follow-up experiment configurations. Associations are hypotheses, not proof or causation;
 reported findings carry multiple-comparison information and statistical caveats.
 
-### 6. Relationship to regional AI weather forecasting
+### 6. Object-first capability routing
+An uploaded CSV/TSV sample table is probed without semantic inference, then receives explicit
+researcher-declared roles, units and row relationships. Its content-bound capability profile
+shows available, unavailable and not-established instruments with reasons. Selecting a plannable
+instrument creates a hashed handoff to the existing ingress planner, whose returned schema and
+file digest are verified before the existing audit controls continue. The handoff runs no
+analysis and creates no evidence or claim.
+
+### 7. Relationship to regional AI weather forecasting
 
 The project is scientifically aligned with comparing Fourier, cosine and wavelet
 representations on limited-area weather domains. Today it can inspect their boundary
@@ -197,7 +382,7 @@ laboratory config has yet been supplied: the motivating experiment is therefore 
 coordinate and train-statistics hashes, checks exact UTC splits and data/transform/model/training
 semantics, and creates one dataset/protocol/checkpoint identity. Passing that binding to the
 evaluator upgrades the record to schema v3 and refuses cross-run substitution or samples outside
-the declared held-out split. This is ready for Adam's real manifest, but the current acceptance
+the declared held-out split. This is ready for a real manifest, but the current acceptance
 fixture is synthetic; there is deliberately no UI "ready" badge claiming a real experiment yet.
 
 FourCastNet 3 is the first partially implemented external global-judge track under T5.6. Its
@@ -330,7 +515,7 @@ prediction = adapter.predict(batch["inputs"], lead_count=batch["targets"].shape[
 ```
 
 T5.3a uses only the final history frame and records that Markov assumption in provenance. The
-actual professor/laboratory architecture and its history semantics remain unintegrated; no
+actual external/laboratory architecture and its history semantics remain unintegrated; no
 current evidence compares representation skill.
 
 T5.3b adds the model-artifact and held-out evaluation contract around that seam. Laboratory code
@@ -449,7 +634,7 @@ Run the same local capability check on any machine:
 * `hpc` runs only inside a detected Slurm, PBS or LSF allocation, uses scheduler local rank for
   GPU placement, and refuses accidental execution on a login node.
 
-For example, Adam can use `auto` on his laptop and set `SPECTRAL_PROFILE=hpc` inside an
+For example, a laptop can use `auto` while `SPECTRAL_PROFILE=hpc` is set inside an
 allocated cluster job. The application does not connect to, submit to or depend on the HPC
 system; the same repository and commands run in both places. Remote submission, environment
 modules/containers and artifact transfer remain site-specific work until the actual cluster
@@ -601,9 +786,86 @@ shards plus the complete temporary Zarr without assuming compression, combines b
 share a drive, and refuses unless at least 5 GiB or 10% of the working requirement remains free
 afterwards. The storage decision is recorded in the acquisition/cache manifest.
 
-Those bounds and dates are an interface example, **not Emily's experiment specification**.
+Those bounds and dates are an interface example, **not any real experiment specification**.
 Materialisation uses the same scientific arguments plus explicit `--download-dir`, `--cache-dir`
 and `--time-chunk`; it still refuses unless the network gate and standard CDS credentials are set.
+
+T4E.36 has a dedicated guarded executor because its dateline complement is a frozen experiment,
+not an ordinary crop. Its plan is safe and offline:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e36_wrapped_acquisition.py plan
+```
+
+The `acquire` phase refuses unless the declaration has a current maintainer adoption and the
+caller supplies `--authorise-network`; the ordinary `SPECTRALEARTH_ALLOW_NETWORK=1` gate still
+applies independently. `materialise` then works offline, verifies all monthly shard receipts and
+the source-encoding seam, preserves the T4E.18 parent, and publishes a content-addressed wrapped
+Zarr receipt. `evaluate --record-receipt <receipt.json>` uses exactly the 18 T4E.28 rows and lets
+only the two frozen raw-field 9-of-18 conditions decide PASS or FAIL. Ed Bentley adopted the
+declaration for guarded execution testing on 2026-09-12; the separately authorised acquisition
+then completed all 48 shards and published the byte-preserving 321-longitude wrapped record. The
+fixed evaluation returned `FAIL`: raw condition 1 was 5/18 and condition 2 was 0/18, against 9/18
+required for each. Added eastward support is therefore not a sufficient repair under this
+procedure, although the improvement from the 3/18 baseline shows that it contributed to some
+edge-row errors.
+
+T4E.37 provides the next offline-plannable diagnostic without changing those failed gates:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e37_failure_attribution.py plan
+```
+
+It freezes the 13 T4E.36 condition-1 failures and asks whether the unchanged sampled field has a
+native-grid 3x3 local maximum inside each existing agency radius before extractor thresholding.
+T4E.36's adoption does not reach this different declaration, so Ed Bentley separately adopted the
+exact T4E.37 digest for guarded execution testing on 2026-09-13. The adoption did not open the
+record or run the evaluation. The subsequent offline evaluation returned
+`FIELD_REFERENCE_SEPARATION_DOMINANT`, 12/13 versus one extractor-filtering candidate, with
+`VERDICT: NOT_AN_ACCEPTANCE`. Neither outcome is PASS or can rescue T4E.36.
+
+T4E.38 implements the separate ERA5 single-level path that the original vorticity design named as
+the next candidate. Its offline plan requests only MSLP at the 18 fixed timestamps, split into two
+dateline segments:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py plan
+```
+
+The resulting 36-shard plan represents 3,732,624 raw float32 bytes and contains no invented
+pressure-level field. Ed Bentley adopted the exact declaration for guarded execution testing on
+2026-09-13 and subsequently supplied the separate experiment-specific authorization while the
+ordinary network gate was enabled. All 18 parent and 18 complement shards were acquired: the
+2,326,213 compressed stored bytes match every recorded content digest, and all 36 files reopen as
+one-time 161x161 `msl` NetCDFs. The adopted offline phases are:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py materialise
+.venv\Scripts\python.exe tools\run_t4e38_reference_alignment.py evaluate --record-receipt data/wrapped_records/t4e38/4acba0aa5be5b174dfacbc0fc376d958e86466bbd70442e6394415113d99c5a8.json
+```
+
+All 18 seams matched exactly against a measured 0.0625 Pa encoding step; the shared meridian was
+retained once and the immutable 18x161x321 MSLP record hashes to `dc6f5365…`. The frozen comparison
+completed with 10 MSLP-closer rows, seven vorticity-closer rows, one exact tie and no refusals,
+returning `VERTICAL_QUANTITY_SEPARATION_DOMINANT` and `VERDICT: NOT_AN_ACCEPTANCE`. This supports
+only the declared development-population candidate under its deterministic basin rule. It neither
+proves vertical separation nor identifies either centre as a cyclone, and it changes no extractor,
+tolerance, radius or acceptance gate.
+
+T4E.39 now freezes the temporal holdout before opening its individual rows. Its offline planner:
+
+```powershell
+.venv\Scripts\python.exe tools\run_t4e39_reference_holdout.py plan
+```
+
+binds the exact T4E.38 result and signed IBTrACS bytes, then reports catalogue rows, holdout
+identities, ERA5 values and network use all false. The declaration retains 2022–2023, the existing
+catalogue selection and deepest-per-storm rule, requires at least 10 selected storms, and uses a
+strict majority of every selected storm with ties/refusals retained. Ed Bentley adopted the exact
+declaration digest `fc7ee60f…` on 2026-09-13 as `ADOPTED_FOR_GUARDED_HOLDOUT_CENSUS`; the signature
+still reaches the declaration. The census has not been run. It is now permitted to publish only
+the mechanically selected identities and exact request times; that census opens no ERA5 and
+authorizes no network acquisition.
 
 The T4C.6 execution boundary is available in `src.analysis_engine.gate_run`. A versioned
 `GateStudyPlan` freezes the crop, transform, climatology and complete statistical protocol;
@@ -698,7 +960,7 @@ without splitting them into two requests, and NOAA HRRR/GFS object-store retriev
 
 SpectralEarth is proprietary software; it is not released under an open-source licence.
 Copyright remains with Edward Jonathan Bentley. [The repository licence](LICENSE.md) grants
-Adam Frank Bentley a named, perpetual, worldwide and royalty-free right to use and modify the
+a designated Named Licensee a perpetual, worldwide and royalty-free right to use and modify the
 platform for lawful personal, academic, scientific and commercial work, while reserving public
 redistribution and sublicensing of the SpectralEarth core. Independently authored extensions
 remain separate under the terms stated there. Third-party libraries, datasets, papers and model

@@ -1,0 +1,506 @@
+{
+  "candidate": "1_multiplicity_aware_admission_via_a_declared_tail_model",
+  "criterion": "multiplicity_aware_tail_admission",
+  "alpha": 0.05,
+  "richness_levels": [
+    6,
+    9,
+    12
+  ],
+  "planted_blocks": [
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "richness": 6,
+      "configurations_per_scene": 20,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 15,
+      "candidate_pairs": 6000,
+      "pairs_proposed_by_candidate_C": 121,
+      "pairs_kept_by_candidate_D": 70,
+      "admitted": 0,
+      "admitted_per_scene_pair": null,
+      "matched_fraction": null,
+      "candidate_D_matched_fraction": 0.23333333333333334,
+      "fitted_shape_range": null,
+      "motif_pairs": 0,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": null,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 0.00027847396268448904,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "richness": 6,
+      "configurations_per_scene": 20,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 15,
+      "candidate_pairs": 6000,
+      "pairs_proposed_by_candidate_C": 121,
+      "pairs_kept_by_candidate_D": 67,
+      "admitted": 0,
+      "admitted_per_scene_pair": null,
+      "matched_fraction": null,
+      "candidate_D_matched_fraction": 0.22333333333333333,
+      "fitted_shape_range": null,
+      "motif_pairs": 0,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": null,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 0.00027847396268448904,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      "richness": 6,
+      "configurations_per_scene": 20,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 15,
+      "candidate_pairs": 6000,
+      "pairs_proposed_by_candidate_C": 152,
+      "pairs_kept_by_candidate_D": 86,
+      "admitted": 0,
+      "admitted_per_scene_pair": null,
+      "matched_fraction": null,
+      "candidate_D_matched_fraction": 0.2866666666666667,
+      "fitted_shape_range": null,
+      "motif_pairs": 0,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": null,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 0.00027847396268448904,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ],
+      "richness": 6,
+      "configurations_per_scene": 20,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 15,
+      "candidate_pairs": 6000,
+      "pairs_proposed_by_candidate_C": 136,
+      "pairs_kept_by_candidate_D": 81,
+      "admitted": 0,
+      "admitted_per_scene_pair": null,
+      "matched_fraction": null,
+      "candidate_D_matched_fraction": 0.27,
+      "fitted_shape_range": null,
+      "motif_pairs": 0,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": null,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 0.00027847396268448904,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "richness": 9,
+      "configurations_per_scene": 84,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 105840,
+      "pairs_proposed_by_candidate_C": 568,
+      "pairs_kept_by_candidate_D": 321,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.25476190476190474,
+      "fitted_shape_range": [
+        -0.5213234128211179,
+        -0.1749373734017186
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 1.5749271596188676e-05,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "richness": 9,
+      "configurations_per_scene": 84,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 105840,
+      "pairs_proposed_by_candidate_C": 485,
+      "pairs_kept_by_candidate_D": 237,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.1880952380952381,
+      "fitted_shape_range": [
+        -0.3663871250703385,
+        -0.17651901554347527
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 1.5749271596188676e-05,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      "richness": 9,
+      "configurations_per_scene": 84,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 105840,
+      "pairs_proposed_by_candidate_C": 585,
+      "pairs_kept_by_candidate_D": 319,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.25317460317460316,
+      "fitted_shape_range": [
+        -0.6237552546493956,
+        -0.05566202712760619
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 1.5749271596188676e-05,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ],
+      "richness": 9,
+      "configurations_per_scene": 84,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 105840,
+      "pairs_proposed_by_candidate_C": 566,
+      "pairs_kept_by_candidate_D": 295,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.23412698412698413,
+      "fitted_shape_range": [
+        -0.5083116981033873,
+        -0.11415896513862903
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 1.5749271596188676e-05,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "richness": 12,
+      "configurations_per_scene": 220,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 726000,
+      "pairs_proposed_by_candidate_C": 1446,
+      "pairs_kept_by_candidate_D": 720,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.21818181818181817,
+      "fitted_shape_range": [
+        -0.4000283511409749,
+        -0.2999760789596824
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 2.295731546335898e-06,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "richness": 12,
+      "configurations_per_scene": 220,
+      "configurations_refused_as_incomparable": 1,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 724900,
+      "pairs_proposed_by_candidate_C": 1440,
+      "pairs_kept_by_candidate_D": 702,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.2127272727272727,
+      "fitted_shape_range": [
+        -0.4038490393943729,
+        -0.26925841921553206
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 2.295731546335898e-06,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        300,
+        301,
+        302,
+        303,
+        304,
+        305
+      ],
+      "richness": 12,
+      "configurations_per_scene": 220,
+      "configurations_refused_as_incomparable": 1,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 724900,
+      "pairs_proposed_by_candidate_C": 1590,
+      "pairs_kept_by_candidate_D": 814,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.24666666666666667,
+      "fitted_shape_range": [
+        -0.3925227272489885,
+        -0.26685794104628136
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 2.295731546335898e-06,
+      "shortfall_factor": 0.0
+    },
+    {
+      "seeds": [
+        400,
+        401,
+        402,
+        403,
+        404,
+        405
+      ],
+      "richness": 12,
+      "configurations_per_scene": 220,
+      "configurations_refused_as_incomparable": 2,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 723800,
+      "pairs_proposed_by_candidate_C": 1488,
+      "pairs_kept_by_candidate_D": 759,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.23,
+      "fitted_shape_range": [
+        -0.43755126742394657,
+        -0.3113183673537443
+      ],
+      "motif_pairs": 15,
+      "motif_pairs_admitted": 0,
+      "false_split_rate": 1.0,
+      "false_admission_rate": null,
+      "false_pair_rate": 0.0,
+      "required_pair_rate": 2.295731546335898e-06,
+      "shortfall_factor": 0.0
+    }
+  ],
+  "null_blocks": [
+    {
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "richness": 6,
+      "configurations_per_scene": 20,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 15,
+      "candidate_pairs": 6000,
+      "pairs_proposed_by_candidate_C": 116,
+      "pairs_kept_by_candidate_D": 62,
+      "admitted": 0,
+      "admitted_per_scene_pair": null,
+      "matched_fraction": null,
+      "candidate_D_matched_fraction": 0.2066666666666667,
+      "fitted_shape_range": null
+    },
+    {
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "richness": 9,
+      "configurations_per_scene": 84,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 105840,
+      "pairs_proposed_by_candidate_C": 595,
+      "pairs_kept_by_candidate_D": 309,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.24523809523809526,
+      "fitted_shape_range": [
+        -0.6624116335542296,
+        -0.27654601232603493
+      ]
+    },
+    {
+      "seeds": [
+        500,
+        501,
+        502,
+        503,
+        504,
+        505
+      ],
+      "richness": 12,
+      "configurations_per_scene": 220,
+      "configurations_refused_as_incomparable": 0,
+      "scene_pairs": 15,
+      "scene_pairs_refused": 0,
+      "candidate_pairs": 726000,
+      "pairs_proposed_by_candidate_C": 1486,
+      "pairs_kept_by_candidate_D": 752,
+      "admitted": 0,
+      "admitted_per_scene_pair": 0.0,
+      "matched_fraction": 0.0,
+      "candidate_D_matched_fraction": 0.22787878787878788,
+      "fitted_shape_range": [
+        -0.385261115123806,
+        -0.2813321184391784
+      ]
+    }
+  ],
+  "by_richness": [
+    {
+      "richness": 6,
+      "worst_false_split": null,
+      "matched_fraction_range": null,
+      "false_admission_range": null,
+      "worst_shortfall_factor": 0.0
+    },
+    {
+      "richness": 9,
+      "worst_false_split": 1.0,
+      "matched_fraction_range": [
+        0.0,
+        0.0
+      ],
+      "false_admission_range": null,
+      "worst_shortfall_factor": 0.0
+    },
+    {
+      "richness": 12,
+      "worst_false_split": 1.0,
+      "matched_fraction_range": [
+        0.0,
+        0.0
+      ],
+      "false_admission_range": null,
+      "worst_shortfall_factor": 0.0
+    }
+  ],
+  "acceptance_boundary": "Condition 1: worst false split at most 0.10 at every richness. Condition 2: the matched fraction must FALL as richness grows rather than holding near candidate D's 0.23. Condition 3: the shortfall must be non-increasing across the three levels and the 0.10 admission bound met at the richest. Condition 4: refusals reported by name.",
+  "the_null_tests_the_tail_model_not_the_signature": "If the tail model is correct, admissions per scene pair equal alpha by construction whatever the signature is like. So a null admission count near alpha means the model holds and any remaining failure is the signature's; far above it means the fit is wrong here and the signature has not been tested at all.",
+  "evidence_class": "development",
+  "boundary": "Measured on the blocks that informed the declaration and its acceptance. Development evidence only; the reserved confirmatory blocks are untouched."
+}
