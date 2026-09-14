@@ -6493,3 +6493,14 @@ model call is explicitly approved, and persistence is a separate confirmed “Sa
 action. Saved text is labelled interpretation rather than evidence and cannot move the claim.
 Whole-corpus record selection, provider-neutral budgeting and transcript-wide independence remain
 future G19 work.
+
+## Documentation capability map truth-up (2026-09-14)
+
+The root README is now a complete current orientation to the implemented engine rather than a
+second copy of dated programme history. It maps data ingestion and acquisition, physical records,
+transforms, diagnostics, discovery, cross-domain and tabular analysis, experiment execution,
+evidence and review, forecasting seams, visualization, extension points, workspaces, setup and
+known limitations. `architecture.md` remains the implementation authority. Its formal-review
+description and route/test/browser inventories were reconciled with the code added through G19.
+The full documentation suite and documentation audit pass; captured output is in
+`VERIFICATION.md`.
