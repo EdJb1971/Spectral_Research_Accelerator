@@ -28,7 +28,7 @@ the cost of a refactor, not for the cost of a platform.
 slices on the **atmospheric** line were named TG19.1 to TG19.5 on 2026-09-11 and appear under
 those names in `architecture.md`, `roadmap.md` and `VERIFICATION.md`. Because `TGxx.y` is this
 document's own phase-slice convention -- TG17.x, TG18.x -- those names read as "phase G19, slice
-x", and they are not. **Phase G19 below is now IN PROGRESS through its separate 2026-09-14
+x", and they are not. **Phase G19 below is COMPLETE through its separate 2026-09-14
 implementation**; nothing in TG19.1-TG19.5 discharged G19.1-G19.5 or any part of them. What those
 five slices actually did:
 `coverage_report` made the coverage question runnable by a caller with their own field and
@@ -39,8 +39,8 @@ disagree with the history.
 
 **Status note.** The atmospheric sequence and this cross-domain programme share one status
 table: `architecture.md` section 0. Nothing in the atmospheric work discharges G17's separate
-scale/shape declarations or its real-record curation requirements, and G19 remains specified
-and the current G19 status is reported in `architecture.md`. This document is task history and
+scale/shape declarations or its real-record curation requirements. G19 was separately specified
+and is now complete; the current status is reported in `architecture.md`. This document is task history and
 does not restate current state.
 
 **Exploratory apparatus, 2026-09-08 -- mutual k-NN alignment. NOT a G-phase task, not
@@ -220,11 +220,10 @@ the live packet before writing either immutable record. Archive discovery/acquis
 evidence reconstruction remain CLI-only because they are bounded network/bulk-publication jobs;
 the UI states this limitation and displays their results.
 
-**Phase G19 is in progress.** Its usable single-study path was implemented on 2026-09-14: a
-researcher can interrogate a finding over several turns with the complete current study, runs and
-formal round table reloaded each time. Unlike the original recording-first specification, the
-conversation is ephemeral unless the researcher separately asks to save it. Whole-corpus record
-selection, provider-neutral budgeting and the generalised transcript-independence proof remain.
+**Phase G19 is complete.** A researcher can interrogate a finding over several turns with relevant
+complete records selected across the corpus and reloaded each time. The conversation is ephemeral
+unless separately saved; its server-authoritative turn chain pins every touched bundle, enforces
+provider capability and cost limits, and proves transcript deletion changes no claim.
 A researcher meeting a refusal wants to interrogate it
 with a model of their choosing, over several turns. G7's recorded-call boundary already supplies
 most of what that needs; what it lacks is a conversation, and a conversation adds drift,
@@ -6158,9 +6157,9 @@ Any of these is a result. The first would mean scale/shape alignment is a descri
 testable mode, which is worth knowing and worth stating plainly.
 
 
-### Phase G19 - The researcher's conversation with the record - **IN PROGRESS**
+### Phase G19 - The researcher's conversation with the record - **COMPLETE**
 
-**The single-study, ephemeral-by-default path is implemented. The atmospheric slices named
+**The whole-record, ephemeral-by-default path is implemented. The atmospheric slices named
 `TG19.1`-`TG19.5` remain unrelated to it; see the naming collision recorded in section 0.**
 
 G7 gives the platform an adversarial review layer that argues with a finding. G19 asks the
@@ -6252,15 +6251,20 @@ not an invitation for a chunker to guess which paragraphs mattered.
     boundary attached to every turn, so the most quotable artefact is also the most clearly
     labelled. R22's structural defence carried into the interface, not restated as a caption.
 
-**Implemented 2026-09-14 — bounded first delivery.** Findings exposes “Discuss this finding” for
-one selected published study. Context and answer routes write nothing; the transcript remains in
-browser memory. Each answer reloads the complete bundle, derived and translated finding, matching
-run summaries, and complete formal review, and requires the client's pinned current bundle digest.
-The UI labels the chat “Private for now · not recorded,” requires explicit approval for every paid
-call, displays sources and cautions, and makes saving a separately confirmed action. A saved copy
-is content-addressed, exact-revision-bound, and labelled interpretation rather than evidence.
-This partially delivers G19.1, G19.2 and G19.5. It does not claim G19.3 or G19.4 complete and does
-not yet provide the final provider-neutral append-only chain or per-conversation budget.
+**Completed 2026-09-14.** Findings exposes “Discuss this finding” from a selected study. A
+deterministic preview and every ask select relevant studies across the corpus; selected records
+enter whole, while an oversized record refuses and names the deterministic view required. The
+server owns an ephemeral, typed, append-only hash chain rather than trusting browser history. Each
+turn reloads sources, pins all touched revisions, and carries a receipt proving its scientific
+context derives exactly from named complete records and contains no dialogue.
+
+Every paid call is separately approved. Provider identity and structured-response capability are
+checked before transport, sampling overrides are absent by contract, and immutable call/token
+limits bound the conversation. `verify_transcript_independence` rebuilds all touched bundles and
+proves that computational deletion of the entire transcript leaves every claim digest unchanged.
+The interface renders that proof and attaches the non-reproducibility/claim boundary to every turn.
+Saving is a distinct confirmation and writes the authoritative chain as interpretation only.
+These executable contracts complete G19.1-G19.5.
 
 **What would falsify this phase, stated in advance.**
 

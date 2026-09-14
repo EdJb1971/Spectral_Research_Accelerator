@@ -1300,7 +1300,7 @@ export interface ReviewSurface {
 }
 
 export interface FindingConversationContext {
-  schema: 'finding-conversation-context/v1';
+  schema: 'finding-conversation-context/v2';
   study_id: string;
   bundle_sha256: string;
   bundle_revision: number;
@@ -1308,27 +1308,82 @@ export interface FindingConversationContext {
   formal_review_count: number;
   run_count: number;
   model_id: string;
+  providers: ConversationProvider[];
   key_present: boolean;
   key_variables: string[];
   recording: 'OFF';
+  whole_corpus_selection: true;
+  default_budget: { max_calls: number; max_total_tokens: number };
   what_is_loaded: string[];
   claim_boundary: string;
   network_used: false;
 }
 
 export interface ConversationTurn {
-  role: 'user' | 'assistant';
+  schema: 'record-conversation-turn/v1';
+  sequence: number;
+  role: 'researcher' | 'model';
   text: string;
+  previous_turn_sha256: string | null;
+  turn_sha256: string;
+  claim_boundary: string;
+  reproducible: boolean;
+  grounding?: ConversationGrounding;
+  provider?: ConversationProvider & { model_id: string };
+  usage?: Record<string, unknown>;
+}
+
+export interface ConversationProvider {
+  provider_id: string;
+  display_name: string;
+  supports_declared_json_schema: boolean;
+  sampling_policy: string;
+}
+
+export interface ConversationGrounding {
+  schema: 'whole-record-grounding/v1';
+  record_granularity: 'complete';
+  records: Array<{ study_id: string; bundle_sha256: string; bundle_revision: number;
+    complete_record_sha256: string; complete_record_bytes: number }>;
+  scientific_context_sha256: string;
+  derivable_from_named_records: true;
+  contains_dialogue: false;
+}
+
+export interface ConversationIndependence {
+  schema: 'conversation-independence-proof/v1';
+  verified: true;
+  transcript_head_sha256: string;
+  claim_digests_with_conversation: Record<string, string>;
+  claim_digests_after_deletion: Record<string, string>;
+  conversation_is_claim_input: false;
+}
+
+export interface ConversationCorpusSelection {
+  schema: 'whole-record-corpus-selection/v1';
+  selected_study_ids: string[];
+  selection_method: string;
+  record_granularity: 'complete';
+  no_fragments: true;
+  grounding: ConversationGrounding;
+  records: Array<{ study_id: string; bundle_sha256: string; bundle_revision: number }>;
 }
 
 export interface FindingConversationAnswer {
-  schema: 'ephemeral-finding-answer/v1';
+  schema: 'ephemeral-finding-answer/v2';
+  conversation_id: string;
   study_id: string;
   bundle_sha256: string;
   answer: string;
   records_used: string[];
   cautions: string[];
   suggested_questions: string[];
+  turns: ConversationTurn[];
+  selected_study_ids: string[];
+  grounding: ConversationGrounding;
+  provider: ConversationProvider & { model_id: string };
+  budget: { calls_used: number; max_calls: number; tokens_used: number; max_total_tokens: number };
+  independence: ConversationIndependence;
   usage: Record<string, unknown>;
   recorded: false;
   claim_boundary: string;
@@ -1339,6 +1394,7 @@ export interface SavedFindingDiscussion {
   file: string;
   discussion_sha256: string;
   recorded: true;
+  independence: ConversationIndependence;
   claim_boundary: string;
 }
 

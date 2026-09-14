@@ -70,7 +70,7 @@ user-facing documentation with the implemented engine.
 | G18 interface programme | **Done** per its recorded acceptance | — | §7.1a |
 | User-facing dashboard and review navigation | **Implemented and rendered** | — | The research archive is now the default dashboard, with plain-language quick actions, searchable past studies and runs, and direct `Discuss finding` handoff into the private-by-default discussion in Findings. The separately named Expert round table remains the formal recorded review workflow. Navigation is organised by user goals; static task IDs, development-stage labels and legacy badges were removed from rendered copy while scientific limitations remain explicit. Production build and seven focused browser journeys pass. |
 | V1 object-first planning handoff | **Implemented** | — | Declared sample tables expose planner destinations from the central capability registry. `POST /api/v1/ingress/planning-handoff` binds exact file bytes, declaration and capability profile to the selected existing planner; the UI invokes that planner and verifies its returned schema and content digest. It creates no project-specific screen, executes no analysis and moves no evidence rung. §3.6zzc |
-| G19 conversation with evidence | **In progress — single-study discussion usable** | Whole-corpus selection and transcript-wide independence proof remain | Findings now includes a multi-turn, full-record discussion of one published study. Every turn reloads the current evidence bundle, finding, matching runs and formal round table; stale digests refuse. It is ephemeral by default and writes only after a separate explicit save. §3.6zyy |
+| G19 conversation with evidence | **Complete** | Private, whole-record, bounded and claim-independent | Findings includes an ephemeral server-authoritative, multi-turn discussion. Deterministic corpus selection admits only complete study records; every turn has a source-derived grounding receipt, provider identity, immutable budget state and claim boundary. All touched bundle revisions are pinned and transcript deletion is proved claim-neutral. Saving remains a separate explicit action. §3.6zyy |
 | `representation_alignment.py` | **Exploratory apparatus — not a phase task** | Gates nothing | Mutual k-NN alignment, closed-form chance floor `k/(n-1)`, permutation null. Synthetic acceptance only; no model downloaded or evaluated. §3.6zzf-alt |
 
 **Open defects:** D18 (partial), D84, D85, D96, D97, D98, D99, D100. D101 was fixed by T4E.9. The full ledger with
@@ -4076,27 +4076,35 @@ once. It is not reproducible computation, evidence, consensus or permission to c
 changes no claim level (R22, R23). A cost receipt proves only the recorded route and token
 accounting, not that the argument was good.
 
-### 3.6zyy Private conversation with a finding (`src/api/conversations.py`, `frontend/src/components/FindingDiscussion.tsx`, G19 in progress)
+### 3.6zyy Private conversation with a finding (`src/core/conversation.py`, `src/api/conversations.py`, `frontend/src/components/FindingDiscussion.tsx`, G19 complete)
 
-The Findings workspace now supports a multi-turn conversation about one published study. The
-browser sends dialogue history and the new question, but never supplies scientific context. On
-every turn the server reloads the complete current evidence bundle, derives and translates the
-finding again, and attaches all matching experiment-run summaries plus the complete verified
-formal round-table surface. The expected bundle digest is mandatory; if the published revision
-has changed, the turn refuses rather than continuing against stale evidence.
+The Findings workspace supports a multi-turn conversation beginning from one published study and
+selecting relevant studies across the published corpus by deterministic term overlap. Selection
+chooses records, never passages: each selected evidence bundle, derived and translated finding,
+matching run summaries and complete formal round-table surface enters whole. An oversized record
+refuses with the deterministic view that must be built; it is never silently chunked.
+
+The server, not the browser, owns the ephemeral transcript. Each turn reloads its source records,
+pins every touched bundle digest and revision, and emits a receipt containing every complete-record
+digest and byte count plus a digest of the scientific context. Dialogue is separately labelled
+non-authoritative and is absent from that scientific-context digest. Researcher and model turns
+are typed and form an append-only hash chain. A changed touched record refuses the conversation.
 
 Conversation is visibly **not recorded by default**. Unsaved turns live only in React component
-memory and neither the context route nor the answer route creates a transcript file. Each model
+server memory and neither the context, selection nor answer route creates a transcript file. Each model
 call requires a fresh paid-call checkbox and a server-side key. Persistence is a distinct action
 with its own explicit confirmation; it writes a content-addressed transcript under
 `SPECTRAL_CONVERSATION_ROOT` (`data/conversations` by default), bound to the exact bundle revision
-and labelled as interpretation rather than evidence. Clearing the chat deletes only browser
-memory. No conversation route can write an evidence bundle or accept a claim rung.
+and labelled as interpretation rather than evidence. The saved artifact preserves the complete
+turn chain, record bindings, provider/model identity, usage and independence proof. No
+conversation route can write an evidence bundle or accept a claim rung.
 
-This implements the usable single-study core of G19.1, re-grounding/staleness behavior from
-G19.2, and the user-facing boundary from G19.5. G19.3's selection across a corpus and G19.4's
-generalised transcript-deletion proof remain open. Saved discussions are not yet the append-only,
-provider-neutral, budgeted conversation chain described by the complete G19 specification.
+`verify_transcript_independence` recomputes every touched claim from rebuilt bundle bytes with the
+conversation present and computationally deleted; equality is returned and rendered after every
+answer and on save. Every displayed turn carries the non-reproducibility and claim boundary.
+Provider capability is an explicit refusal surface (Gemini is currently registered), sampling
+overrides are not accepted, and the server enforces immutable per-conversation call/token limits
+before a paid call. These contracts complete G19.1-G19.5.
 
 ### 3.6zz Irregular profiles (`src/data_layer/profiles.py`, `src/data_layer/profile_reductions.py`, `src/data_layer/argo_source.py`, `src/api/profiles.py`, `frontend/src/components/ProfileAcquisition.tsx`, TG12.2b-d, `ed-dev`)
 
@@ -6689,7 +6697,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-180 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+181 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -6777,8 +6785,9 @@ existing file.
 | GET | `/api/v1/findings/studies/{study_id}/translation` | the finding rendered in one domain's words; R9's six figures whole or absent |
 | GET | `/api/v1/reviews/studies/{study_id}` | verified recorded calls, round-robin outcomes and cost receipts bound to the latest exact bundle revision; read-only and never claim permission (TG11.5) |
 | GET | `/api/v1/conversations/studies/{study_id}/context` | describe the complete current grounding for private finding discussion without calling a model or recording anything (G19) |
-| POST | `/api/v1/conversations/studies/{study_id}/ask` | one explicitly authorised model turn, re-grounded from complete current records; returns an unrecorded interpretation and refuses stale bundle digests (G19) |
-| POST | `/api/v1/conversations/studies/{study_id}/save` | deliberately persist a transcript beside the exact study revision as interpretation, never evidence (G19) |
+| POST | `/api/v1/conversations/corpus/select` | preview deterministic corpus selection at complete-record granularity, including exact grounding receipt; oversized records refuse with the deterministic view required (G19.3) |
+| POST | `/api/v1/conversations/studies/{study_id}/ask` | append one explicitly authorised turn to a server-authoritative ephemeral transcript, re-grounding complete records and returning provider, budget, turn-chain and cross-study independence receipts (G19) |
+| POST | `/api/v1/conversations/studies/{study_id}/save` | deliberately persist the authoritative hash-chained transcript, all pinned study revisions and its deletion proof as interpretation, never evidence (G19) |
 
 | GET | `/api/v1/profiles` | registered Argo profile sources and the access each needs (TG12.2) |
 | POST | `/api/v1/profiles/inspect` | what a profile query would return, from metadata; opens no values (TG12.2) |
@@ -14030,7 +14039,8 @@ able to sit three slices out of date.
 | `test_mining_api.py` | 41 | TG11.4 the structure-mining surface: no request model on it accepts a feature, a coordinate or a graph; a tolerance cannot be typed and travels as the digest of a calibration the server performed; a tolerance measured through another pipeline or on held-out frames refused; frames of unequal feature counts refused rather than trimmed, with the tempting repair named; a record addressed by its bytes and its declaration, and refused when the stored declaration is edited; a pickled array refused rather than loaded; a domain with no spatial extent refused; the frame split asserted against the row split it mirrors; a generation response carrying held-out geometry and nothing measured inside it; every sealed setting present in the seal, stored where every other seal is; a confirmation that takes a seal digest and nothing else; the planted motif confirmed on frames it was not mined from; the held-out frames opened once; a seal frozen by another surface refused; **a null record confirming nothing**; a published definition carrying its origin licence; a transfer target opened once whatever is transferred into it; a transfer into the origin domain refused as replication; and the invariance audit reporting an unsupported declaration as overclaimed |
 | `test_cross_domain_api.py` | 35 | TG11.4b the cross-domain record: two native clocks intersected exactly, with what each side retained and discarded reported; clocks that share no observation refused rather than resampled, and the refusal naming interpolation as the thing it declines; an irregular native clock refusing precedence by name; a column whose semantics or units were not declared refused rather than defaulted (R19); an unknown reading setting refused rather than ignored; two records from one domain refused as not a cross-domain study; a family declared in seconds converted onto the common cadence; only pairs that cross the boundary counted as members; a duration below either domain’s physical floor refused rather than dropped and one the common clock cannot express refused rather than rounded; the price agreeing with the family the generate pass actually searches; the partition identity ignoring what the files were called (D65); generation reading nothing from the held-out partition and writing nothing; every run setting sealed inside the specification and the seal visible where the programme lists what it froze; the frozen members re-derived from the record rather than reconstructed from their labels; an edited seal refused at load and spending nothing; **the planted relationship confirmed on data it was not selected from and the same pipeline over an uncoupled pair confirming nothing**; both operands’ semantics and units restored to the receipt; the partition opened once; a wrong pair of records confirming nothing and costing nothing; a published digest that disagrees with the seal spending nothing; a seal frozen by another surface refused; the confirm route accepting the two records and nothing else; and no route on the surface accepting a lag in frames |
 | `test_reviews_api.py` | 10 | TG11.5's read-only recorded-review boundary: explicit absence without reassurance, complete verified record/outcome/cost serving, exact latest-bundle binding, record-digest linkage, malformed and unknown artifacts reported rather than skipped, unknown-study 404, GET-only routing, and a read leaving the evidence bundle byte-identical (R22, R23); and T4E.33 the guard that asserted this router was read-only, NARROWED rather than deleted to the property that now holds -- exactly one writing route, the one that convenes a panel, refusing before it spends anything -- with the module's docstring pinned to no longer claim it never runs a model |
-| `test_conversations_api.py` | 5 | G19's bounded first delivery: context identifies complete current grounding without writing, paid calls refuse without explicit approval, an answer receives evidence/finding/run/review records while remaining unrecorded, stale bundle identity refuses before model use, and only the separate save route writes an exact-revision-bound interpretation |
+| `test_conversation_core.py` | 4 | G19 pure guarantees: deterministic record-level corpus selection, source-derivable whole-record receipts, typed append-only turn-chain tamper refusal, and deletion independence across every touched bundle |
+| `test_conversations_api.py` | 8 | G19 delivery: private context and explicit call approval, complete evidence/finding/run/review grounding, stale refusal, explicit-only save, reachable whole-record corpus preview, provider refusal before transport, and server-authoritative conversation-budget enforcement |
 | `test_profiles.py` | 10 | TG12.2b-d immutable profiles, declared reductions, and bounded Argo seam: profile spec machine-independence and scatter preservation, preflight counts, observed-invalid distinction from absence, per-float reduction enforcing violations, depth-bin aggregation identity shifts, profile collection round trips, argo parent flat-channel refusal, profile reduction registry discoverability, and profile API contract refusal visibility (E15, R17) |
 | `test_photometry.py` | 25 | TG13.1 atomic TESS onboarding and precedence refusal, canonical bounded requests, metadata-only exact-product preflight, bounded transient-timeout retry, recorded FITS checksum state and value-bound identity, pre-download caps, immutable collection replay, source discovery, TG17.15 slices 12–15's bounded and incremental periodic-product joins, per-target metadata lineage, discovery-bound raw acquisition, explicit profile qualification, adopted marginal assessment, receipt merge and source-bound profile export, API claim boundaries, and an explicit opt-in bounded live MAST acceptance (E14, E15, R17, R21) |
 | `test_exoplanet_period_source.py` | 3 | TG17.15 slice 12's public TOI period catalogue: independently declared periods converted to seconds, calibrated eight-cycle floor, strict response parsing and multi-period stellar hosts refused rather than duplicated or assigned an arbitrary phase |
@@ -14074,7 +14084,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4721** | |
+| **total** | **4728** | |
 
 ### 7.4a Browser suite inventory
 

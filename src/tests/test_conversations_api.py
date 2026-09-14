@@ -103,10 +103,14 @@ def test_answer_is_not_recorded_and_receives_the_complete_current_record(
     assert response.status_code == 200
     body = response.json()
     assert body["recorded"] is False
-    assert seen["grounding"]["evidence_bundle"]["study_id"] == reviewed.bundle.study_id
-    assert "derived_finding" in seen["grounding"]
-    assert "experiment_runs" in seen["grounding"]
-    assert "formal_round_table" in seen["grounding"]
+    assert seen["records"][0]["evidence_bundle"]["study_id"] == reviewed.bundle.study_id
+    assert "derived_finding" in seen["records"][0]
+    assert "experiment_runs" in seen["records"][0]
+    assert "formal_round_table" in seen["records"][0]
+    assert body["grounding"]["record_granularity"] == "complete"
+    assert body["grounding"]["contains_dialogue"] is False
+    assert body["independence"]["verified"] is True
+    assert body["turns"][1]["claim_boundary"]
     assert not conversations.exists()
 
 
@@ -126,16 +130,24 @@ def test_stale_conversation_is_refused_before_model_use(client, conversation_sto
     assert called == []
 
 
-def test_only_the_explicit_save_route_writes_a_bound_interpretation(client, conversation_stores):
+def test_only_the_explicit_save_route_writes_a_bound_interpretation(
+        client, conversation_stores, monkeypatch):
     reviewed, conversations = conversation_stores
     context = _context(client, reviewed)
-    turns = [{"role": "user", "text": "What matters?"},
-             {"role": "assistant", "text": "The recorded limitation."}]
+    monkeypatch.setattr("src.api.conversations._key", lambda: "test-key")
+    monkeypatch.setattr("src.api.conversations._ask_model", lambda **kwargs: {
+        "answer": "The recorded limitation.", "records_used": ["evidence_bundle"],
+        "cautions": [], "suggested_questions": [], "usage": {"totalTokenCount": 12}})
+    asked = client.post(
+        "/api/v1/conversations/studies/%s/ask" % reviewed.bundle.study_id,
+        json={"question": "What matters?", "glossary": "reanalysis",
+              "expected_bundle_sha256": context["bundle_sha256"],
+              "i_authorise_paid_call": True},
+    ).json()
 
     response = client.post(
         "/api/v1/conversations/studies/%s/save" % reviewed.bundle.study_id,
-        json={"turns": turns, "glossary": "reanalysis",
-              "expected_bundle_sha256": context["bundle_sha256"]},
+        json={"conversation_id": asked["conversation_id"]},
     )
 
     assert response.status_code == 200
@@ -144,7 +156,60 @@ def test_only_the_explicit_save_route_writes_a_bound_interpretation(client, conv
     files = list(conversations.glob("*.json"))
     assert len(files) == 1
     record = json.loads(files[0].read_text(encoding="utf-8"))
-    assert record["turns"] == turns
-    assert record["bundle_sha256"] == reviewed.bundle.bundle_sha256
+    assert [turn["text"] for turn in record["turns"]] == [
+        "What matters?", "The recorded limitation."]
+    assert record["bindings"][reviewed.bundle.study_id]["bundle_sha256"] == reviewed.bundle.bundle_sha256
     assert record["recording_was_explicitly_requested"] is True
+    assert record["independence"]["verified"] is True
     assert "never evidence" in record["claim_boundary"]
+
+
+def test_corpus_route_selects_complete_related_studies(client, conversation_stores):
+    reviewed, _ = conversation_stores
+    response = client.post("/api/v1/conversations/corpus/select", json={
+        "primary_study_id": reviewed.bundle.study_id,
+        "question": reviewed.bundle.hypothesis.statement,
+        "glossary": "reanalysis", "max_records": 3})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["record_granularity"] == "complete"
+    assert body["no_fragments"] is True
+    assert body["grounding"]["derivable_from_named_records"] is True
+
+
+def test_unknown_provider_is_refused_before_model_use(client, conversation_stores, monkeypatch):
+    reviewed, _ = conversation_stores
+    context = _context(client, reviewed)
+    monkeypatch.setattr("src.api.conversations._key", lambda: "test-key")
+    called = []
+    monkeypatch.setattr("src.api.conversations._ask_model", lambda **kwargs: called.append(kwargs))
+    response = client.post(
+        "/api/v1/conversations/studies/%s/ask" % reviewed.bundle.study_id,
+        json={"question": "What matters?", "provider_id": "opaque-provider",
+              "expected_bundle_sha256": context["bundle_sha256"],
+              "i_authorise_paid_call": True})
+    assert response.status_code == 400
+    assert "refused before any call" in response.json()["detail"]
+    assert called == []
+
+
+def test_server_enforces_conversation_budget_not_browser_history(
+        client, conversation_stores, monkeypatch):
+    reviewed, _ = conversation_stores
+    context = _context(client, reviewed)
+    calls = []
+    monkeypatch.setattr("src.api.conversations._key", lambda: "test-key")
+    monkeypatch.setattr("src.api.conversations._ask_model", lambda **kwargs: calls.append(kwargs) or {
+        "answer": "Bound answer", "records_used": [], "cautions": [],
+        "suggested_questions": [], "usage": {"totalTokenCount": 20}})
+    first = client.post("/api/v1/conversations/studies/%s/ask" % reviewed.bundle.study_id,
+        json={"question": "First?", "expected_bundle_sha256": context["bundle_sha256"],
+              "max_calls": 1, "i_authorise_paid_call": True})
+    assert first.status_code == 200
+    second = client.post("/api/v1/conversations/studies/%s/ask" % reviewed.bundle.study_id,
+        json={"question": "Second?", "expected_bundle_sha256": context["bundle_sha256"],
+              "conversation_id": first.json()["conversation_id"],
+              "i_authorise_paid_call": True})
+    assert second.status_code == 409
+    assert second.json()["detail"]["nothing_was_sent"] is True
+    assert len(calls) == 1

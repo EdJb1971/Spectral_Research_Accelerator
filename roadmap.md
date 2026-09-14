@@ -6479,20 +6479,21 @@ unchanged: discussion can challenge a result but cannot promote its evidence sta
 The source contract inventory and rendered journey tests were updated to test the user-facing
 information architecture rather than require the removed development vocabulary.
 
-## G19 private discussion of final findings (2026-09-14)
+## G19 private discussion of final findings — **COMPLETE** (2026-09-14)
 
-The roadmap's previously specified “researcher's conversation with the record” has started with a
-usable single-study path. Findings now supports multi-turn questions grounded in the complete
-current evidence bundle, final translated finding, experiment-run summaries and formal round-table
-records. Scientific context is rebuilt on every turn and a changed bundle digest refuses the next
-question.
+The roadmap's “researcher's conversation with the record” is complete. Findings supports
+multi-turn questions grounded in complete relevant studies selected deterministically across the
+published corpus. Each turn reloads the evidence bundle, translated finding, experiment runs and
+formal round table; pins every touched revision; and carries an independently recomputable
+whole-record grounding receipt.
 
 The delivery changes the original recording-first assumption in response to the product need:
-discussion is ephemeral by default. The browser retains turns only in component memory, each paid
-model call is explicitly approved, and persistence is a separate confirmed “Save discussion”
-action. Saved text is labelled interpretation rather than evidence and cannot move the claim.
-Whole-corpus record selection, provider-neutral budgeting and transcript-wide independence remain
-future G19 work.
+discussion is ephemeral by default. The server retains an authoritative typed, hash-chained
+transcript only in memory, each paid call is explicitly approved, and persistence is a separate
+confirmed “Save discussion” action. Provider/schema capability and immutable call/token budgets
+refuse before transport. Every answer and saved transcript carries a proof that deleting the
+whole conversation leaves every touched claim digest unchanged. The interface attaches the
+non-reproducibility and claim boundary to every turn. This completes G19.1-G19.5.
 
 ## Documentation capability map truth-up (2026-09-14)
 
