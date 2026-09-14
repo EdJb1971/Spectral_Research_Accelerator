@@ -19,7 +19,8 @@ says what to do next and deliberately does not restate status; `roadmap.md` and
 current state is; `VERIFICATION.md` holds the captured output behind each figure. Sections 3
 and 7 below describe the implementations and the defect ledger in full.
 
-Last revised 2026-09-14, after drafting the ninth criterion candidate.
+Last revised 2026-09-14, after adding the private finding-discussion path and reconciling the
+user-facing documentation with the implemented engine.
 
 | Task | State | Gate on it | Detail |
 |---|---|---|---|
@@ -67,7 +68,7 @@ Last revised 2026-09-14, after drafting the ninth criterion candidate.
 | Phase 5 forecast comparison | **Interfaces only** | External model must be supplied and bound | §3, T5.3a |
 | G17 cross-domain | **In progress — release withheld** | `scale_shape_calibration` REFUSED | Three of seven PASS as of 2026-09-12: `browser_no_glue` and `synthetic_fifth_adapter` remain NOT_RUN pending a full browser re-recording. Corrected per-TIC period lineage supplies 104 adopted-method source-bound profiles; a packet identifies a 59-record 48-core and a 57-record pairwise-admissible subset. Inventory is `READY_FOR_CURATION_REVIEW`, but no curation decision exists and pool exchangeability remains unassessed. Complete pool evidence and human review/adoption controls are in Platform Status; network acquisition and immutable rebuild remain CLI jobs. §7.1a–7.1r |
 | G18 interface programme | **Done** per its recorded acceptance | — | §7.1a |
-| User-facing dashboard and review navigation | **Implemented and rendered** | — | The research archive is now the default dashboard, with plain-language quick actions, searchable past studies and runs, and direct `Discuss` handoff into the existing eight-seat expert round table. Navigation is organised by user goals; static task IDs, development-stage labels and legacy badges were removed from rendered copy while scientific limitations remain explicit. Production build and seven focused browser journeys pass. |
+| User-facing dashboard and review navigation | **Implemented and rendered** | — | The research archive is now the default dashboard, with plain-language quick actions, searchable past studies and runs, and direct `Discuss finding` handoff into the private-by-default discussion in Findings. The separately named Expert round table remains the formal recorded review workflow. Navigation is organised by user goals; static task IDs, development-stage labels and legacy badges were removed from rendered copy while scientific limitations remain explicit. Production build and seven focused browser journeys pass. |
 | V1 object-first planning handoff | **Implemented** | — | Declared sample tables expose planner destinations from the central capability registry. `POST /api/v1/ingress/planning-handoff` binds exact file bytes, declaration and capability profile to the selected existing planner; the UI invokes that planner and verifies its returned schema and content digest. It creates no project-specific screen, executes no analysis and moves no evidence rung. §3.6zzc |
 | G19 conversation with evidence | **In progress — single-study discussion usable** | Whole-corpus selection and transcript-wide independence proof remain | Findings now includes a multi-turn, full-record discussion of one published study. Every turn reloads the current evidence bundle, finding, matching runs and formal round table; stale digests refuse. It is ephemeral by default and writes only after a separate explicit save. §3.6zyy |
 | `representation_alignment.py` | **Exploratory apparatus — not a phase task** | Gates nothing | Mutual k-NN alignment, closed-form chance floor `k/(n-1)`, permutation null. Synthetic acceptance only; no model downloaded or evaluated. §3.6zzf-alt |
@@ -3572,11 +3573,13 @@ until an external multi-worker queue is qualified.
 
 ### 3.6zr Workflow navigation and persistent context (`frontend/src/App.tsx`, TG11.0, `ed-dev`)
 
-The shell groups its eleven destinations by the scientific workflow: **Acquire, Analyse,
-Evidence, Review, Read, Platform**. The spatial generator, meteorological reader, boundary lab,
-spectral transforms and diagnostics are explicitly labelled the **Gridded field line**; grouping
-does not generalise them to channel domains. Review was initially an honest labelled waypoint;
-TG11.5 now fills it with recorded argument in a workspace separate from Findings.
+The shell groups 25 workspaces by user goal: **Home, Data, Research, Results, Advanced methods,
+Scientific decisions, and System**. The spatial generator, meteorological reader, boundary lab,
+spectral transforms, diagnostics, forecast evaluation, study history, and atmospheric decision
+tools are explicitly labelled the **Gridded field line** where applicable; grouping does not
+generalise them to channel domains. The default workspace is the searchable Research dashboard.
+`Discuss finding` enters the private-by-default discussion inside Findings; Expert round table is
+the separately named formal recorded review workflow.
 
 The selected channel record and study id are shell-owned context. Because the API response is a
 bounded preview, `ChannelRecordSelection` retains the original browser `File`, chosen clock and
@@ -4035,13 +4038,15 @@ rendered-browser audit.
 
 ### 3.6zy Recorded review, outside the claim surface (`src/api/reviews.py`, `frontend/src/components/ReviewView.tsx`, TG11.5, `ed-dev`)
 
-**Read, do not rerun.** `GET /api/v1/reviews/studies/{study_id}` is the review layer's only HTTP
-route and its only verb is GET. It cannot create a panel, call a model, append evidence or accept
-a claim state. It reads `ReviewRecord`, `RoundRobinOutcome` and `ReviewCostReceipt` artifacts from
-the dedicated `SPECTRAL_REVIEW_ROOT` (`data/reviews` by default), classifies them by their declared
-schema rather than their filename, and reconstructs each through its core type so every content
-digest is checked again on read. Unknown, malformed and tampered artifacts are reported by
-filename rather than silently disappearing.
+The review surface has a read path and a deliberately separate convening path. `GET
+/api/v1/reviews/studies/{study_id}` reads `ReviewRecord`, `RoundRobinOutcome` and
+`ReviewCostReceipt` artifacts from the dedicated `SPECTRAL_REVIEW_ROOT` (`data/reviews` by
+default), classifies them by declared schema rather than filename, and reconstructs each through
+its core type so every content digest is checked again. Unknown, malformed and tampered artifacts
+are reported by filename rather than silently disappearing. `POST
+/api/v1/reviews/studies/{study_id}/round-robin` is the only writing route on this router. It cannot
+run without a server-side key and explicit paid-call authorisation, and it records partial paid
+work if a later turn fails. Neither route can append evidence or accept a claim state.
 
 **Four bindings prevent stale commentary from looking current.** The route first resolves the
 latest immutable bundle revision through `StudyStore`. A review must match its study id, bundle
@@ -4056,17 +4061,15 @@ Findings. The amber R23 declaration and R22/R23 claim boundary precede every rec
 rendered calls and round-robin outcomes are shown as recorded argument, including retained
 dissent; cost receipts show the provider route's recorded token counts and digest, with no dollar
 price and no suggestion that cost measures review quality. The shared study id is navigation
-context only. There is no vote count, consensus badge, promotion control or action that can run a
-review.
+context only. There is no vote count, consensus badge or promotion control. Convening is visibly
+separate from reading and requires a fresh explicit authorisation.
 
-**What is verified.** `test_reviews_api.py` has eight tests for the empty state, the complete
-record/outcome/receipt surface, exact-revision binding, record-digest linkage, corrupt-artifact
-reporting, 404 behavior, GET-only routing and byte-identical bundle reads. Six additional frontend
-contracts guard routing and separation from Findings, the GET-only client, the visible R23 fence,
-complete argument/cost rendering, honest empty states and accessibility semantics.
-`test_frontend_contract.py` passes 92 tests and the production build transforms 1,395 modules.
-Rendered inspection was attempted through the configured in-app browser, whose runtime reported
-no available browser backend, so it remains **NOT RUN**.
+**What is verified.** `test_reviews_api.py` covers the honest empty state, complete
+record/outcome/receipt serving, exact-revision and record-digest binding, corrupt-artifact
+reporting, unknown-study behavior, the single writing-route boundary, paid-call refusal before
+model use and byte-identical evidence reads. Frontend contracts guard separation from Findings,
+the visible R23 fence, complete argument/cost rendering, honest empty states and accessibility
+semantics. The focused rendered journey confirms that formal review remains separately reachable.
 
 **Claim boundary.** A recorded argument is an observation of what a non-deterministic process said
 once. It is not reproducible computation, evidence, consensus or permission to claim; deleting it
@@ -6686,7 +6689,7 @@ existing file.
 
 ## 3.12 HTTP API Surface
 
-177 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
+180 routes. Listed here because an undocumented endpoint is an untested contract. The count and this table were both wrong until TG17.3 (defect D75): the guard enumerated a hand-maintained list of ten source files and could not see four mounted routers.
 
 | Method | Route | Notes |
 |---|---|---|
@@ -12915,7 +12918,14 @@ The architecture is highly modular and maintains clean boundaries at several cri
 
 ## 6. Front-End Technical Implementation
 
-The React frontend is fully written and structurally complete. It was installed and built in T3.5.0/T3.5.3 (`npm run build` emits hashed JS and CSS into `dist/`) and wired to the previously unreachable endpoints in T3.5.22. Its **rendered appearance was confirmed by the user on 2026-08-20** (T3.5.25): the platform was started, both servers came up, and the then-nine tabs were reported working. T5.6g added a tenth tab, TG9.2 an eleventh and TG8.4 briefly a twelfth Domain Records tab. TG10.2 consolidated that reader into Acquire, leaving eleven destinations; TG11.0 groups those destinations by workflow rather than numbering them. TG11.1-TG11.5 add Cross-domain analysis, Preregistration, Evidence record, Structure mining, Cross-domain record and Recorded review, bringing the workflow to sixteen destinations. T4C.5j adds a seventeenth, the read-only Atmospheric gate record, under Review. The post-T3.5.25 surfaces compile and build but have **not** been visually inspected in a browser. The earlier confirmation is a user report, not an artefact - **no screenshot per tab exists in this repository**, so T3.5.0's literal evidence clause remains outstanding. Contract tests prove all seventeen current destinations compile, call routes that exist and read fields that are present; they do not prove rendered appearance.
+The React frontend is installed, builds to hashed JS/CSS assets, and currently serves 25 workspaces
+under the seven user-goal groups named above. The Research dashboard is the default. Rendered
+Playwright journeys cover navigation, the four product modes, responsive layouts, assistive
+semantics, scientific figures, qualification surfaces, study handoffs, and the private finding-
+discussion handoff. The user confirmed the running dashboard on 2026-09-14. There is still no
+literal screenshot artifact for every workspace, so the older per-tab screenshot clause remains
+outstanding; rendered browser tests and a user inspection are evidence of operation, not a visual
+certification of every possible state.
 
 *   **Component Visualizations:** `Heatmap2D.tsx` and `LineChart.tsx` wrap `react-plotly.js`; `LineageGraph.tsx` is a hand-rolled SVG node-link renderer with a tooltip inspector and no external graph dependency. All three take reactive props and render spatial fields, PSD curves, coherence ratios, and provenance DAGs.
 *   **Accessibility has a workflow-wide source contract (TG11.6).** The shell provides skip and
@@ -12923,16 +12933,22 @@ The React frontend is fully written and structurally complete. It was installed 
     globally visible, reduced motion is honoured, asynchronous state is announced, figures have
     text equivalents and SVG lineage nodes have keyboard operation. Rendered assistive-technology
     inspection is still NOT RUN, so no WCAG conformance level is claimed.
-*   **Main Application (`App.tsx`):** shell state and the fourteen destinations grouped under
-    Acquire, Analyse, Evidence, Review, Read and Platform, with persistent selected-record and
-    selected-study context, loading indicators, dynamic controls and proposal adoption.
+*   **Main Application (`App.tsx`):** shell state and 25 workspaces grouped under Home, Data,
+    Research, Results, Advanced methods, Scientific decisions, and System, with persistent
+    selected-record and selected-study context, loading indicators, dynamic controls, and
+    proposal/adoption handoffs.
 *   **Platform & Evidence tab (T3.5.22):** the execution device, core and thread counts, executor backends with the measured rationale for the serial default, the SQLite pragmas actually in force, the stamped Alembic revision with an explicit warning when the schema is behind the code, the data-source fallback chain labelled observational/SIMULATED from each source's own declared flag, and the full Ground-Truth Benchmark Suite with its declared known answers and null benchmarks marked. All of this existed on the backend for several slices with no consumer.
 *   **Acquire tab (TG10.2):** domain first, then an acquisition generated from the registries. The ERA5 crop form, R13 floor, recorded probe ledger, metadata-only chunk inspection, cached-crop readiness refusals and materialisation command remain under `grid_crop`; the existing channel reader appears under an admitted `channel_table` domain. Adding a domain changes rows, not navigation.
 *   **Spectral Transforms training-readiness and DTCWT evidence panels (T5.1e):** read backend-derived contracts rather than a hand-written capability list. Every candidate shows coefficient expansion, shift behaviour, directional meaning, boundary convention, scientific role, verified and NOT RUN backends, and limitations. SWT and DTCWT show the selected grid's per-level edge exclusion and valid interior. Applying an analytical DTCWT additionally shows six native-resolution complex-magnitude maps at the chosen scale, one shared colour range, measured versus nominal angles and a marked valid inset. No cross-level interpolation is used; phase and atlas adjacency are not mislabelled as physical scalar structure.
 *   **Statistics on every hypothesis (defect D8, presentation half):** the card labelled a bare `|r|` as "Confidence" and showed nothing else, which is what made nine noise correlations from a 9-run sweep read as nine discoveries. It now says **effect size**, and shows the q-value, the raw p-value, the family size, the correction procedure **with its dependence assumption**, and the R7 non-causality caveat. A finding with no correction gets an explicit warning rather than looking identical to a corrected one.
 *   **Frontend/backend contract, checked mechanically (`src/tests/test_frontend_contract.py`):** `npm run build` runs `tsc`, so the frontend's internal types are checked; nothing checked them against the backend, and the payloads that matter are `Record<string, any>` because their shape is nested. The tests parse `api.ts` for every path it fetches and assert each is served (distinguishing a path parameter from a query string), assert every service method is actually called from `App.tsx`, and assert every nested key the UI reads exists in a real response. It found a live bug on its first run: the hypothesis card rendered `statistics.correction`, which is an **object**, and would have thrown *"Objects are not valid as a React child"* while `tsc`, `vite build` and 547 backend tests all passed.
-*   **API Integration:** `src/services/api.ts` covers every backend endpoint via `fetch` against the relative base `/api/v1`. The offline fallback lives in `App.tsx`, not in the client service - each tab catches the network error and substitutes a local mock generator (`getMockDatasets`, `runMockFieldGenerator`, `applyMockPerturbation`, and the mock lineage fixture at `App.tsx:647`). The relative base URL means the frontend normally goes through the Vite dev proxy (`vite.config.ts`); since T3.5.2 the API also declares `CORSMiddleware` with an origin allowlist from `CORS_ALLOW_ORIGINS`, so a direct cross-origin call works too (defect D5).
-*   **Not yet verified:** the "zero-error strict TypeScript compile / clean production bundle" claim made in earlier revisions of this document is **not substantiated**. `frontend/node_modules` does not exist, `frontend/dist/` contains only `index.html` with no emitted JS or CSS assets, and `tailwind.config.js` / `postcss.config.js` are both **missing** while `src/index.css` uses `@tailwind` directives and `@apply`. A build would therefore either fail or emit an unstyled page. Fixed and actually verified in Tasks 3.5.3 and 3.5.11.
+*   **API Integration:** `frontend/src/services/api.ts` uses the relative base `/api/v1`, normally
+    through the Vite development proxy. FastAPI also declares a `CORS_ALLOW_ORIGINS` allowlist for
+    deliberate direct cross-origin use. Workflow components render server refusals; they do not
+    substitute simulated success when the backend is unavailable.
+*   **Build status:** `npm run build` runs TypeScript checking and Vite production bundling and is
+    passing on the current tree. The emitted bundle still carries Vite's advisory about chunks
+    larger than 500 kB; that is a performance/code-splitting concern, not a type or build failure.
 
 ---
 
@@ -14058,7 +14074,7 @@ able to sit three slices out of date.
   | `test_identity_certification.py` | 131 | T4E.9 the T4E identity path against a motif known by construction: the benchmark registered and naming the path it certifies, three disjoint partitions so a radius is never evaluated on what calibrated it, exactly one motif configuration in a planted scene and none in a null one, construction labels taken from the generator and refused rather than guessed when a planted position has no feature near it or two positions claim one, only cross-scene pairs formed, the definition's separation asserted as a floor, nothing admitted where nothing recurs with the absent positive population left unmeasured rather than zero, the frozen-radius failure pinned as a relationship to the feasible radius rather than as two numbers, an empty calibration returning INVALID rather than a permissive radius, every result stating what it does not license, and T4E.13's criterion fixed in code while asserted to be measured nowhere -- `k` derived as a function of the partition size, unequal partitions refused rather than pooled, monotonicity in `k` checked on a toy rather than assumed, and, once candidate 3 was adopted and falsified, that guard replaced by the reading of the result -- which conditions failed and by how much, that the null held at 0 of 1486 proposed, that the 0.0000 recall is recorded as arithmetic rather than a finding, that no lower k can rescue what this one failed, that the falsification licenses none of the conclusions nearest to it, that partitions 720-735 stay refused in code, and T4E.14's partial-presence test bed -- seeds that collide with no existing evidence, a reservation refused with no flag to open it, planting patterns that are deterministic and not contiguous, the recoverable population C(j,2) rather than C(S,2), the design's own record of what this evidence cannot repair, and T4E.15's criterion fixed in code while asserted to be measured nowhere -- closure broken by a single loose end, closure admitting only a subset of what consistency admits, the criterion carrying no tunable parameter at all, the span-ranking design recorded as discarded by derivation, the declaration's own worst case and refusal to predict, and -- once measured and falsified -- the reading of that result: the conditions that failed with their counts, the mechanism executed rather than described (a pair with no other partners is closed and is therefore admitted, while one loose end rejects a group spanning five scenes), the cross-check showing closure admits more than candidate 2 on the evidence candidate 2 passed, the missed derivation recorded rather than quietly repaired, the constraint the falsification fixes on any successor, and T4E.16's withdrawal held as a derivation rather than a note -- the surrogate reassembly rate computed analytically and by simulation, the record of why the design cannot simply be repaired, the fact that a withdrawn declaration adds nothing to the accumulated multiplicity, and PooledDistances keeping a refused distance as NaN so it can never leak in as a number |
   | `test_identity_target_declaration.py` | 53 | T4E.8 slice 3 the declared identity target: an absent target or evidence class refused by name, a misspelling refused with its correction, `kind_recurrence` against record-derived proxy labels refused as circular, `track_continuity` admitted with its tracker-agreement caveat, every target round-tripping what it recognises and does not license, the published proxy wording pinned verbatim so naming a target cannot reword a cited receipt, and the external-reference path recovering two planted identities from a reviewed catalogue while refusing a mismatched family, a single identity, a non-catalogue and a negative population the patterns cannot supply |
   | `test_spectral_spatial_identity.py` | 24 | T4E.8 spatial geometry, detector-band/magnitude independence, source/scope refusal, analytic distances, old-radius refusal, scalar/accelerated agreement and two-sided proxy-label diagnostics |
-| **total** | **4716** | |
+| **total** | **4721** | |
 
 ### 7.4a Browser suite inventory
 
@@ -14085,7 +14101,7 @@ not bound to the scratch state.
 | `validity-uncertainty.spec.ts` | 19 | TG18.2 the declared fit domain and stated uncertainty, split the same way |
 | `resizable-panes.spec.ts` | 6 | TG18.2 pointer and keyboard pane sizing, Plotly data/scale preservation and narrow-width document order |
 | `publication-export.spec.ts` | 4 | TG18.2 downloaded vector reading sheets, including evaluated missingness, producer qualifications and live-figure immutability |
-| `research-journey.spec.ts` | 5 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation and reachable distinguished legacy tools |
+| `research-journey.spec.ts` | 7 | TG18.3 all seven global stages, one remediation per context blocker, Composer/ladder separation, reachable distinguished gridded tools, dashboard quick actions, and direct private-finding discussion handoff |
 | `assistive-acceptance.spec.ts` | 11 | TG18.4 keyboard order and focus at three layouts, zoom-equivalent reflow, rendered contrast, reduced motion, non-colour and semantic acceptance |
 | `identity-declaration.spec.ts` | 8 | T4E.8 slice 4 the identity declaration rendered: every target with what it does not license, the circular pairing on screen as a refusal with its reason, that refusal drawn at the weight of an admission (bounding boxes required to agree within four pixels, because equal weight is a claim about a picture), an admitted pairing still carrying its caveat, receipts showing no approved mining radius, a pre-slice-3 receipt labelled rather than hidden, a receipt opened whole, and no control that chooses |
 

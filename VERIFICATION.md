@@ -16859,3 +16859,29 @@ and only the explicit save route creates an exact-revision-bound interpretation 
 The production build also passed with 1,429 modules transformed in 56.70 seconds. The existing
 large-chunk advisory remains. A combined run of the two backend surfaces and the unchanged-size
 frontend contract inventory passed 201 tests with five warnings in 23.67 seconds.
+
+## Documentation truth-up and complete README capability map (2026-09-14)
+
+`README.md` was replaced as an orientation and operating reference over the implemented engine,
+not a second chronological roadmap. It now covers every major data shape, source family,
+transform, diagnostic, discovery layer, cross-domain and tabular method, durable-run behavior,
+evidence/review boundary, forecasting seam, visualization contract, extension point, workspace,
+installation path, configuration boundary and known limitation. Present-tense status is limited
+to a machine-checked frontier block and points back to `architecture.md` section 0.
+
+The review architecture was corrected to describe both the read route and the explicitly
+authorised formal-convening route. The API inventory was updated from 177 to 180 routes, the test
+function inventory from 4,716 to 4,721, and the rendered research-journey inventory from five to
+seven tests.
+
+```text
+> .\.venv\Scripts\python.exe -m pytest src/tests/test_documentation.py -q
+32 passed, 2 warnings in 273.30s
+
+> .\.venv\Scripts\python.exe tools\audit_docs.py
+undocumented modules : none
+undocumented routes  : none
+test functions       : 4721
+stale inventory rows : none
+RESULT               : ok
+```
