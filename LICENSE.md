@@ -220,4 +220,147 @@ Nothing in this licence overrides:
 6. contractual restrictions; or
 7. other third-party rights.
 
-Users are responsible for determining whether they hav
+Users are responsible for determining whether they have appropriate rights to data, models and other materials they use with SpectralEarth.
+
+## 11. No restriction on research results
+
+Subject to third-party rights and applicable law, this licence does not restrict ownership or publication of scientific results generated through lawful use of SpectralEarth.
+
+Researchers may publish and distribute their own:
+
+* papers;
+* hypotheses;
+* conclusions;
+* measurements;
+* statistics;
+* derived datasets;
+* figures;
+* visualisations;
+* benchmark results;
+* trained-model outputs;
+* experimental results; and
+* other original research products.
+
+This permission does not allow publication of a substantial portion of the SpectralEarth source code except as permitted for a Research Fork under section 4.
+
+Nothing in this licence gives the Owner ownership of a researcher's scientific discoveries merely because SpectralEarth was used to assist in making them.
+
+## 12. No endorsement
+
+The names **SpectralEarth**, **Edward Jonathan Bentley**, associated project names, logos and branding may not be used to state or imply endorsement, certification or approval of another product, service, organisation, publication or scientific conclusion without prior written permission.
+
+Accurate factual statements identifying SpectralEarth as software used in research are permitted.
+
+## 13. Disclaimer of warranty
+
+To the maximum extent permitted by applicable law, the Software is provided **"as is"** and **"as available"**, without warranties, representations or conditions of any kind, whether express, implied or statutory.
+
+This includes, without limitation, warranties or representations concerning:
+
+* accuracy;
+* correctness;
+* completeness;
+* scientific validity;
+* reproducibility;
+* reliability;
+* availability;
+* merchantability;
+* fitness for a particular purpose; and
+* non-infringement.
+
+The Software is experimental research software and may contain errors, incomplete implementations, numerical limitations or behaviour inappropriate for a particular scientific or operational purpose.
+
+Users must independently validate results before relying upon them.
+
+## 14. Limitation of liability
+
+To the maximum extent permitted by applicable law, the Owner will not be liable for any direct, indirect, incidental, special, exemplary, consequential or economic loss arising from:
+
+* access to or use of the Software;
+* inability to use the Software;
+* software errors or defects;
+* loss or corruption of data;
+* research error;
+* incorrect interpretation;
+* publication;
+* operational decisions;
+* predictions;
+* reliance upon an output; or
+* use of third-party data, models or services with the Software,
+
+even if advised that such loss was possible.
+
+Nothing in this licence excludes or limits liability that applicable law does not permit to be excluded or limited.
+
+## 15. Breach and termination
+
+Rights granted under this licence apply only while the user complies with its terms.
+
+If a person or organisation materially breaches this licence, the Owner may provide written notice describing the breach and allow 30 days to remedy it where remedy is reasonably possible.
+
+The licence granted to that person or organisation may be terminated if the material breach remains unremedied at the end of that period.
+
+Where a breach cannot reasonably be remedied, the Owner may terminate the licence immediately by written notice.
+
+Following termination, the affected person or organisation must cease exercising rights granted by this licence and cease distributing the Software or affected Modifications.
+
+Termination does not require destruction of scientific publications, results or other independent research products lawfully created before termination.
+
+Sections concerning ownership, Contributions, attribution, scientific responsibility, third-party materials, disclaimer of warranty, limitation of liability, governing law and other provisions intended by their nature to survive termination will continue to apply.
+
+## 16. Separate permissions and licences
+
+The Owner may grant additional permissions or licences separately in writing.
+
+These may include:
+
+* commercial licences;
+* institutional licences;
+* collaboration agreements;
+* private development arrangements;
+* redistribution rights;
+* integration rights; or
+* permissions applying to a particular project or organisation.
+
+A separate written licence or agreement may grant rights broader than those provided by this public licence.
+
+Such an agreement affects only the parties and Software specified by that agreement and does not automatically alter the rights granted to other users under this licence.
+
+## 17. Future versions and relicensing
+
+The Owner may release future versions of SpectralEarth under this licence, a revised version of this licence, an open-source licence, a commercial licence, multiple licences, or another licensing arrangement.
+
+A change to the licence applying to a future release does not retrospectively remove rights already granted to a recipient for a version of the Software received under this licence, except as permitted by the termination provisions for breach.
+
+Nothing in this section restricts rights held by Contributors in their independently owned material.
+
+Contributor material incorporated into SpectralEarth may be relicensed by the Owner only to the extent permitted by the rights granted under section 7.
+
+## 18. Governing law
+
+This licence is governed by the laws of New Zealand.
+
+To the extent permitted by law, disputes concerning this licence are subject to the exclusive jurisdiction of the courts of New Zealand.
+
+Nothing in this section prevents a party from seeking urgent interim relief from another competent jurisdiction where reasonably necessary to protect intellectual property, confidential information or other legal rights.
+
+## 19. Entire licence and severability
+
+This document states the public licence granted by the Owner for SpectralEarth.
+
+A waiver, amendment, additional permission, assignment, commercial licence or other separate arrangement must be recorded in writing by the affected parties.
+
+Failure to enforce a provision on one occasion does not waive that provision.
+
+If any provision of this licence is held invalid or unenforceable, it will be limited or removed only to the minimum extent necessary, and the remaining provisions will continue in effect.
+
+## 20. Questions and additional permissions
+
+Questions about this licence, proposed research uses, commercial licensing, collaboration or requests for additional permission may be sent to:
+
+**Edward Jonathan Bentley**
+**[ed.j.bentley@gmail.com](mailto:ed.j.bentley@gmail.com)**
+
+---
+
+**SpectralEarth is publicly available for scientific exploration, validation and collaboration. Public source availability does not constitute a waiver of copyright or an unrestricted grant of commercial rights.**
