@@ -1,4 +1,5 @@
 # SpectralEarth Research Workbench
+![SpectralEarth Dashboard](screenshots/spectralearthdashboard.png)
 
 SpectralEarth is a local-first scientific workbench for multiscale analysis, controlled
 experiments, cross-domain structural discovery, evidence management, and research review. It
@@ -95,6 +96,8 @@ The platform does not silently download data, substitute simulated values for a 
 source, infer a domain from a filename, interpolate mismatched clocks, regrid mismatched spatial
 coordinates, or convert unknown units.
 
+![SpectralEarth Dashboard](screenshots/aquiredata.png)
+
 ### 2. Physical data model and geometry
 
 - `PhysicalField` binds tensor values to coordinate metadata, units, grid identity, and device.
@@ -124,6 +127,8 @@ coordinates, or convert unknown units.
 source identity. `WaveletBank` enumerates declared families, levels, orientations, and pressure
 levels as an ordinary experiment matrix. Support calculations flow into acquisition planning and
 valid-interior visualization.
+
+![SpectralEarth Dashboard](screenshots/spectraltransforms.png)
 
 ### 4. Synthetic fields, perturbations, and boundary analysis
 
@@ -289,6 +294,8 @@ Registry extension points include data sources/stores, atomic domain onboarding,
 transforms, training representations, experiment actions, alignment kernels, null families,
 statistics, comparison views, receipt fields, benchmark fixtures, and capability routes. Bundled
 `extensions/` modules demonstrate Argo, TESS, and standardized record adapters.
+
+![SpectralEarth Dashboard](screenshots/benchmarks.png)
 
 ## Dashboard workflow
 
